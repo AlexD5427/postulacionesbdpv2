@@ -1,0 +1,293 @@
+/* Design tokens first (must precede @tailwind / other rules). */
+@import '../design-system/tokens/primitives.css';
+@import '../design-system/tokens/semantic.css';
+@import '../design-system/tokens/glass.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   BASE
+   ========================================================================== */
+@layer base {
+  * {
+    border-color: rgb(var(--color-border));
+  }
+
+  html {
+    /* Accessibility center scales this variable; rem-based type follows. */
+    font-size: calc(100% * var(--a11y-font-scale, 1));
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: rgb(var(--color-background));
+    color: rgb(var(--color-foreground));
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: 1.6;
+    min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    line-height: 1.15;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--color-ring));
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* Respect OS reduced-motion at the platform level. The app also exposes a
+     user toggle via [data-motion='reduced']. */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+
+  [data-motion='reduced'] *,
+  [data-motion='reduced'] *::before,
+  [data-motion='reduced'] *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  ::selection {
+    background: rgb(var(--color-primary) / 0.22);
+  }
+}
+
+/* ==========================================================================
+   LIQUID GLASS MATERIAL VARIANTS
+   Each surface stacks: tint + backdrop-filter + hairline border + inner
+   highlight + outer shadow. `@supports` provides a solid fallback where
+   backdrop-filter is unavailable.
+   ========================================================================== */
+@layer components {
+  .glass {
+    position: relative;
+    background-color: rgb(var(--glass-tint) / var(--glass-alpha-standard));
+    border: 1px solid rgb(var(--glass-border) / var(--glass-border-alpha));
+    box-shadow: var(--shadow-glass-md);
+    border-radius: var(--radius-xl);
+    -webkit-backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
+    backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
+  }
+
+  /* The refraction highlight — a thin bright inner top edge. */
+  .glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      160deg,
+      rgb(var(--glass-highlight) / var(--glass-highlight-alpha)),
+      rgb(var(--glass-highlight) / 0) 40%
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .glass-subtle {
+    background-color: rgb(var(--glass-tint) / var(--glass-alpha-subtle));
+    -webkit-backdrop-filter: blur(var(--blur-sm)) saturate(var(--glass-saturate));
+    backdrop-filter: blur(var(--blur-sm)) saturate(var(--glass-saturate));
+    box-shadow: var(--shadow-glass-sm);
+  }
+
+  .glass-elevated {
+    background-color: rgb(var(--glass-tint) / var(--glass-alpha-elevated));
+    -webkit-backdrop-filter: blur(var(--blur-lg)) saturate(var(--glass-saturate));
+    backdrop-filter: blur(var(--blur-lg)) saturate(var(--glass-saturate));
+    box-shadow: var(--shadow-glass-lg);
+  }
+
+  .glass-floating {
+    background-color: rgb(var(--glass-tint) / var(--glass-alpha-floating));
+    -webkit-backdrop-filter: blur(var(--blur-lg)) saturate(var(--glass-saturate));
+    backdrop-filter: blur(var(--blur-lg)) saturate(var(--glass-saturate));
+    box-shadow: var(--shadow-glass-xl);
+  }
+
+  .glass-navigation {
+    background-color: rgb(var(--glass-tint) / var(--glass-alpha-floating));
+    -webkit-backdrop-filter: blur(var(--blur-xl)) saturate(var(--glass-saturate));
+    backdrop-filter: blur(var(--blur-xl)) saturate(var(--glass-saturate));
+    box-shadow: var(--shadow-glass-md);
+  }
+
+  .glass-modal {
+    background-color: rgb(var(--glass-tint-strong) / var(--glass-alpha-elevated));
+    -webkit-backdrop-filter: blur(var(--blur-xl)) saturate(var(--glass-saturate));
+    backdrop-filter: blur(var(--blur-xl)) saturate(var(--glass-saturate));
+    box-shadow: var(--shadow-glass-xl);
+  }
+
+  .glass-input {
+    background-color: rgb(var(--glass-tint) / var(--glass-alpha-input));
+    -webkit-backdrop-filter: blur(var(--blur-sm)) saturate(var(--glass-saturate));
+    backdrop-filter: blur(var(--blur-sm)) saturate(var(--glass-saturate));
+    box-shadow: inset 0 1px 2px rgb(var(--glass-shadow) / 0.06);
+  }
+
+  /* Media surfaces sit over imagery; slightly stronger tint for legibility. */
+  .glass-media {
+    background-color: rgb(var(--glass-tint-strong) / 0.5);
+    -webkit-backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
+    backdrop-filter: blur(var(--blur-md)) saturate(var(--glass-saturate));
+  }
+
+  /* Opaque, disciplined fallback: no blur support -> solid surface. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass,
+    .glass-subtle,
+    .glass-elevated,
+    .glass-floating,
+    .glass-navigation,
+    .glass-modal,
+    .glass-media,
+    .glass-input {
+      background-color: rgb(var(--glass-tint) / 0.98);
+    }
+  }
+
+  /* Ambient page backdrop — soft institutional gradient + glow blobs. */
+  .ambient-bg {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-base);
+    background:
+      radial-gradient(60rem 60rem at 12% -10%, rgb(var(--ambient-glow) / 0.35), transparent 60%),
+      radial-gradient(50rem 50rem at 100% 0%, rgb(var(--color-accent) / 0.12), transparent 55%),
+      linear-gradient(180deg, rgb(var(--ambient-1)) 0%, rgb(var(--ambient-2)) 55%, rgb(var(--ambient-3)) 100%);
+    pointer-events: none;
+  }
+
+  /* Skeleton shimmer used by loading states. */
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background: rgb(var(--color-muted));
+    border-radius: var(--radius-md);
+  }
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(var(--glass-highlight) / 0.25),
+      transparent
+    );
+  }
+  :not([data-motion='reduced']) .skeleton::after {
+    animation: shimmer 1.6s infinite;
+  }
+}
+
+/* ==========================================================================
+   UTILITIES + ACCESSIBILITY MODES
+   ========================================================================== */
+@layer utilities {
+  .container-page {
+    width: 100%;
+    max-width: 80rem;
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 4vw, 2.5rem);
+  }
+
+  .text-gradient {
+    background: linear-gradient(120deg, rgb(var(--color-primary)), rgb(var(--color-accent)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Comfortable reading mode — wider spacing, capped measure. */
+  [data-reading='comfortable'] p,
+  [data-reading='comfortable'] li {
+    line-height: 1.85;
+    letter-spacing: 0.01em;
+    max-width: 68ch;
+  }
+
+  /* Highlight links + buttons (accessibility center). */
+  [data-highlight-links='true'] a:not([class*='btn']),
+  [data-highlight-links='true'] button:not([aria-hidden='true']) {
+    outline: 1px dashed rgb(var(--color-primary) / 0.6);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Increased focus visibility (accessibility center). */
+  [data-focus='enhanced'] :focus-visible {
+    outline: 3px solid rgb(var(--color-ring)) !important;
+    outline-offset: 3px !important;
+    box-shadow: 0 0 0 6px rgb(var(--color-ring) / 0.25) !important;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* Skip link — visible on focus. */
+  .skip-link {
+    position: fixed;
+    top: 0.75rem;
+    left: 0.75rem;
+    transform: translateY(-160%);
+    transition: transform var(--duration-sm) var(--ease-out);
+    z-index: var(--z-toast);
+  }
+  .skip-link:focus {
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
+   PRINT — used by the CV preview "Imprimir / Guardar PDF".
+   Hides app chrome and flattens glass so the CV prints cleanly.
+   ========================================================================== */
+@media print {
+  .ambient-bg,
+  header,
+  nav,
+  footer,
+  .skip-link {
+    display: none !important;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .cv-print,
+  .cv-print * {
+    color: #000 !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+}
