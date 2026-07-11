@@ -1,0 +1,124 @@
+/**
+ * Design token PRIMITIVES — the raw scales.
+ *
+ * These are provider/context-neutral values. Components must NOT reference the
+ * `--p-*` primitives directly; they consume the SEMANTIC tokens in
+ * semantic.css. Keeping the two layers separate lets us re-theme (light, dark,
+ * high-contrast) by only remapping semantics. See DESIGN_SYSTEM.md.
+ *
+ * Colors are stored as space-separated RGB channels so Tailwind's
+ * `rgb(var(--token) / <alpha-value>)` syntax works.
+ */
+:root {
+  /* --- Brand: BDP deep institutional blue + warm gold accent -------------- */
+  --p-blue-50: 236 244 255;
+  --p-blue-100: 213 230 255;
+  --p-blue-200: 170 205 252;
+  --p-blue-300: 122 174 245;
+  --p-blue-400: 78 138 230;
+  --p-blue-500: 43 104 201;
+  --p-blue-600: 28 80 168;
+  --p-blue-700: 22 62 130;
+  --p-blue-800: 18 48 98;
+  --p-blue-900: 14 35 71;
+  --p-blue-950: 9 22 46;
+
+  --p-gold-300: 247 214 138;
+  --p-gold-400: 233 187 92;
+  --p-gold-500: 209 158 58;
+  --p-gold-600: 176 128 36;
+
+  --p-teal-400: 63 191 173;
+  --p-teal-500: 34 158 143;
+
+  /* --- Neutrals (cool slate) --------------------------------------------- */
+  --p-white: 255 255 255;
+  --p-slate-25: 249 250 252;
+  --p-slate-50: 244 246 250;
+  --p-slate-100: 235 239 245;
+  --p-slate-200: 219 225 235;
+  --p-slate-300: 194 203 218;
+  --p-slate-400: 148 160 181;
+  --p-slate-500: 105 118 141;
+  --p-slate-600: 74 86 107;
+  --p-slate-700: 52 63 82;
+  --p-slate-800: 33 43 60;
+  --p-slate-900: 20 27 41;
+  --p-slate-950: 11 16 26;
+
+  /* --- Status ------------------------------------------------------------- */
+  --p-green-500: 34 160 94;
+  --p-green-600: 22 128 74;
+  --p-amber-500: 214 158 46;
+  --p-amber-600: 180 128 30;
+  --p-red-500: 214 69 69;
+  --p-red-600: 185 48 48;
+  --p-sky-500: 42 143 214;
+
+  /* --- Radii -------------------------------------------------------------- */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.75rem;
+  --radius-3xl: 2.25rem;
+  --radius-full: 9999px;
+
+  /* --- Spacing scale (rem) ----------------------------------------------- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  /* --- Typography --------------------------------------------------------- */
+  --font-sans: 'Inter var', 'Inter', ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* Fluid type using clamp: min, preferred (vw), max */
+  --text-xs: clamp(0.75rem, 0.72rem + 0.15vw, 0.8125rem);
+  --text-sm: clamp(0.8125rem, 0.78rem + 0.2vw, 0.875rem);
+  --text-base: clamp(0.9375rem, 0.9rem + 0.25vw, 1rem);
+  --text-lg: clamp(1.0625rem, 1rem + 0.4vw, 1.125rem);
+  --text-xl: clamp(1.1875rem, 1.05rem + 0.6vw, 1.375rem);
+  --text-2xl: clamp(1.4375rem, 1.25rem + 0.9vw, 1.75rem);
+  --text-3xl: clamp(1.75rem, 1.45rem + 1.6vw, 2.375rem);
+  --text-4xl: clamp(2.125rem, 1.7rem + 2.4vw, 3.25rem);
+  --text-5xl: clamp(2.5rem, 1.9rem + 3.6vw, 4.25rem);
+
+  /* --- Z-index scale ------------------------------------------------------ */
+  --z-base: 0;
+  --z-content: 10;
+  --z-surface: 20;
+  --z-nav: 40;
+  --z-overlay: 60;
+  --z-modal: 80;
+  --z-a11y: 90;
+  --z-toast: 100;
+
+  /* --- Motion duration scale --------------------------------------------- */
+  --duration-instant: 80ms;
+  --duration-xs: 120ms;
+  --duration-sm: 180ms;
+  --duration-md: 260ms;
+  --duration-lg: 420ms;
+  --duration-xl: 640ms;
+
+  /* --- Motion easing scale ------------------------------------------------ */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --ease-spring-soft: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* --- Opacity scale ------------------------------------------------------ */
+  --opacity-disabled: 0.5;
+  --opacity-muted: 0.7;
+  --opacity-scrim: 0.55;
+}

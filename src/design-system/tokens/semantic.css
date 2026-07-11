@@ -1,0 +1,86 @@
+/**
+ * Design token SEMANTICS.
+ *
+ * Semantic tokens map primitives to roles (background, foreground, primary...).
+ * Components consume ONLY these. Theme switching (dark, high-contrast,
+ * reduced-transparency) works by remapping semantics — nothing in components
+ * changes. See DESIGN_SYSTEM.md and THEME docs.
+ *
+ * Theme selection is driven by `data-theme` on <html> (set by next-themes) and
+ * by the accessibility attributes `data-contrast`, `data-transparency`.
+ */
+
+/* ---- LIGHT (default) ------------------------------------------------------ */
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  --color-background: var(--p-slate-50);
+  --color-foreground: var(--p-slate-900);
+  --color-muted: var(--p-slate-100);
+  --color-muted-foreground: var(--p-slate-600);
+
+  --color-primary: var(--p-blue-600);
+  --color-primary-foreground: var(--p-white);
+  --color-accent: var(--p-gold-500);
+  --color-accent-foreground: var(--p-slate-950);
+
+  --color-success: var(--p-green-600);
+  --color-warning: var(--p-amber-600);
+  --color-danger: var(--p-red-600);
+  --color-info: var(--p-sky-500);
+
+  --color-border: var(--p-slate-200);
+  --color-ring: var(--p-blue-500);
+
+  /* Ambient page background gradient stops */
+  --ambient-1: 224 236 255;
+  --ambient-2: 244 246 250;
+  --ambient-3: 236 244 255;
+  --ambient-glow: var(--p-blue-300);
+}
+
+/* ---- DARK ---------------------------------------------------------------- */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-background: var(--p-slate-950);
+  --color-foreground: var(--p-slate-50);
+  --color-muted: var(--p-slate-800);
+  --color-muted-foreground: var(--p-slate-300);
+
+  --color-primary: var(--p-blue-400);
+  --color-primary-foreground: var(--p-slate-950);
+  --color-accent: var(--p-gold-400);
+  --color-accent-foreground: var(--p-slate-950);
+
+  --color-success: var(--p-green-500);
+  --color-warning: var(--p-amber-500);
+  --color-danger: var(--p-red-500);
+  --color-info: var(--p-sky-500);
+
+  --color-border: var(--p-slate-700);
+  --color-ring: var(--p-blue-300);
+
+  --ambient-1: 14 35 71;
+  --ambient-2: 11 16 26;
+  --ambient-3: 18 48 98;
+  --ambient-glow: var(--p-blue-700);
+}
+
+/* ---- HIGH CONTRAST (independent of light/dark) --------------------------- */
+[data-contrast='high'] {
+  --color-border: var(--color-foreground);
+  --color-muted-foreground: var(--color-foreground);
+  --color-ring: var(--color-foreground);
+}
+[data-contrast='high'][data-theme='light'] {
+  --color-background: var(--p-white);
+  --color-foreground: 0 0 0;
+  --color-primary: var(--p-blue-800);
+}
+[data-contrast='high'][data-theme='dark'] {
+  --color-background: 0 0 0;
+  --color-foreground: 255 255 255;
+  --color-primary: var(--p-blue-200);
+}

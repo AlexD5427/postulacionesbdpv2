@@ -1,0 +1,103 @@
+/**
+ * LIQUID GLASS material tokens.
+ *
+ * Each glass surface is built from four ingredients:
+ *   1. a translucent background tint,
+ *   2. a backdrop blur + saturation,
+ *   3. a hairline border that catches light,
+ *   4. an inner highlight + soft outer shadow that fake refraction/depth.
+ *
+ * We expose these as variables so the `.glass-*` utility classes in
+ * globals.css stay declarative, and so accessibility fallbacks (reduced
+ * transparency, high contrast, unsupported browsers) can neutralise them in a
+ * single place. See LIQUID_GLASS_IMPLEMENTATION.md.
+ */
+
+:root,
+[data-theme='light'] {
+  --glass-tint: 255 255 255;
+  --glass-tint-strong: 255 255 255;
+  --glass-border: 255 255 255;
+  --glass-highlight: 255 255 255;
+  --glass-shadow: 15 30 60;
+
+  --glass-alpha-subtle: 0.42;
+  --glass-alpha-standard: 0.55;
+  --glass-alpha-elevated: 0.66;
+  --glass-alpha-floating: 0.72;
+  --glass-alpha-input: 0.6;
+
+  --glass-border-alpha: 0.65;
+  --glass-highlight-alpha: 0.7;
+  --glass-shadow-alpha: 0.12;
+
+  --blur-sm: 8px;
+  --blur-md: 16px;
+  --blur-lg: 24px;
+  --blur-xl: 40px;
+  --glass-saturate: 160%;
+
+  --shadow-glass-sm: 0 1px 2px rgb(var(--glass-shadow) / 0.06),
+    0 4px 12px rgb(var(--glass-shadow) / 0.08);
+  --shadow-glass-md: 0 2px 6px rgb(var(--glass-shadow) / 0.08),
+    0 12px 28px rgb(var(--glass-shadow) / 0.12);
+  --shadow-glass-lg: 0 6px 16px rgb(var(--glass-shadow) / 0.1),
+    0 24px 60px rgb(var(--glass-shadow) / 0.16);
+  --shadow-glass-xl: 0 12px 32px rgb(var(--glass-shadow) / 0.14),
+    0 40px 96px rgb(var(--glass-shadow) / 0.2);
+}
+
+[data-theme='dark'] {
+  --glass-tint: 30 41 61;
+  --glass-tint-strong: 20 27 41;
+  --glass-border: 190 205 235;
+  --glass-highlight: 220 230 255;
+  --glass-shadow: 0 0 0;
+
+  --glass-alpha-subtle: 0.4;
+  --glass-alpha-standard: 0.52;
+  --glass-alpha-elevated: 0.62;
+  --glass-alpha-floating: 0.7;
+  --glass-alpha-input: 0.5;
+
+  --glass-border-alpha: 0.18;
+  --glass-highlight-alpha: 0.14;
+  --glass-shadow-alpha: 0.5;
+
+  --glass-saturate: 150%;
+
+  --shadow-glass-sm: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 12px rgb(0 0 0 / 0.35);
+  --shadow-glass-md: 0 2px 6px rgb(0 0 0 / 0.35), 0 12px 28px rgb(0 0 0 / 0.45);
+  --shadow-glass-lg: 0 6px 16px rgb(0 0 0 / 0.4), 0 24px 60px rgb(0 0 0 / 0.55);
+  --shadow-glass-xl: 0 12px 32px rgb(0 0 0 / 0.45), 0 40px 96px rgb(0 0 0 / 0.6);
+}
+
+/**
+ * REDUCED TRANSPARENCY / HIGH CONTRAST FALLBACK.
+ *
+ * When the candidate asks for reduced transparency (accessibility center) or
+ * high contrast, glass becomes (near-)opaque and blur is dropped. Readability
+ * always wins over the material effect.
+ */
+[data-transparency='reduced'],
+[data-contrast='high'] {
+  --glass-alpha-subtle: 1;
+  --glass-alpha-standard: 1;
+  --glass-alpha-elevated: 1;
+  --glass-alpha-floating: 1;
+  --glass-alpha-input: 1;
+  --glass-highlight-alpha: 0;
+  --blur-sm: 0px;
+  --blur-md: 0px;
+  --blur-lg: 0px;
+  --blur-xl: 0px;
+  --glass-saturate: 100%;
+}
+[data-transparency='reduced'][data-theme='light'],
+[data-contrast='high'][data-theme='light'] {
+  --glass-tint: 255 255 255;
+}
+[data-transparency='reduced'][data-theme='dark'],
+[data-contrast='high'][data-theme='dark'] {
+  --glass-tint: 22 29 44;
+}
