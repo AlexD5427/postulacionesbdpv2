@@ -70,7 +70,7 @@ describe('toJobSummary', () => {
       tags: [],
     } as unknown as JobPublication;
 
-    const summary = toJobSummary(job) as Record<string, unknown>;
+    const summary = toJobSummary(job) as unknown as Record<string, unknown>;
     expect(summary.title).toBe('Cajero');
     expect(summary.sourceProvider).toBe('mock');
     expect(summary.blocks).toBeUndefined();
