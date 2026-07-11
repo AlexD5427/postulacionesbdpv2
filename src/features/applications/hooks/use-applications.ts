@@ -19,6 +19,15 @@ export function useApplication(id: string) {
   });
 }
 
+export function useDraftForJob(jobId: string) {
+  const provider = getDataProvider();
+  return useQuery({
+    queryKey: queryKeys.applicationDraft(jobId),
+    queryFn: () => provider.applications.getDraftForJob(jobId),
+    enabled: Boolean(jobId),
+  });
+}
+
 export function useSaveDraft() {
   const provider = getDataProvider();
   const queryClient = useQueryClient();
