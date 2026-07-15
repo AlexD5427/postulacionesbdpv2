@@ -36,7 +36,8 @@ export default async function LandingPage() {
             Banco de Desarrollo Productivo BDP S.A.M.
           </Badge>
           <h1 className="text-4xl font-bold leading-[1.05] md:text-5xl">
-            Construye tu carrera <span className="text-gradient">impulsando el desarrollo</span> de
+            Construye tu carrera{' '}
+            <span className="text-gradient text-gradient-animated">impulsando el desarrollo</span> de
             Bolivia.
           </h1>
           <p className="max-w-xl text-lg text-muted-foreground">
@@ -71,7 +72,12 @@ export default async function LandingPage() {
         </Reveal>
 
         <Reveal delay={0.1}>
-          <GlassSurface variant="elevated" radius="3xl" padding="none" className="overflow-hidden">
+          <GlassSurface
+            variant="elevated"
+            radius="3xl"
+            padding="none"
+            className="glass-sheen overflow-hidden"
+          >
             <InteractiveImage
               src="https://images.unsplash.com/photo-1600880292089-90a7e086ee0c?auto=format&fit=crop&w=1200&q=70"
               alt="Equipo del banco colaborando en una oficina luminosa"
@@ -128,7 +134,7 @@ export default async function LandingPage() {
             const Icon = step.icon;
             return (
               <RevealItem key={step.title} className="h-full">
-                <Card className="h-full gap-3">
+                <Card className="glass-interactive h-full gap-3">
                   <div className="flex items-center gap-3">
                     <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary">
                       <Icon className="h-5 w-5" aria-hidden />
@@ -147,7 +153,7 @@ export default async function LandingPage() {
       {/* COMMITMENTS */}
       <section className="grid gap-6 md:grid-cols-3">
         <Reveal className="h-full">
-          <Card className="h-full gap-3">
+          <Card className="glass-interactive h-full gap-3">
             <Accessibility className="h-7 w-7 text-primary" aria-hidden />
             <CardTitle className="text-lg">Compromiso con la accesibilidad</CardTitle>
             <CardDescription>
@@ -160,7 +166,7 @@ export default async function LandingPage() {
           </Card>
         </Reveal>
         <Reveal delay={0.05} className="h-full">
-          <Card className="h-full gap-3">
+          <Card className="glass-interactive h-full gap-3">
             <Lock className="h-7 w-7 text-primary" aria-hidden />
             <CardTitle className="text-lg">Privacidad primero</CardTitle>
             <CardDescription>
@@ -173,7 +179,7 @@ export default async function LandingPage() {
           </Card>
         </Reveal>
         <Reveal delay={0.1} className="h-full">
-          <Card className="h-full gap-3">
+          <Card className="glass-interactive h-full gap-3">
             <Headphones className="h-7 w-7 text-primary" aria-hidden />
             <CardTitle className="text-lg">Estamos para ayudarte</CardTitle>
             <CardDescription>
@@ -192,7 +198,7 @@ export default async function LandingPage() {
           variant="floating"
           radius="3xl"
           padding="lg"
-          className="flex flex-col items-center gap-4 text-center"
+          className="glass-sheen flex flex-col items-center gap-4 text-center"
         >
           <h2 className="text-2xl font-bold md:text-3xl">¿List@ para dar el siguiente paso?</h2>
           <p className="max-w-2xl text-muted-foreground">

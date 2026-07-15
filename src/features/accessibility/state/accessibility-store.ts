@@ -9,8 +9,9 @@ import {
   FONT_SCALE_STEP,
   type AccessibilityPreferences,
 } from '@/shared/types/domain';
+import { A11Y_STORAGE_KEY } from './storage-key';
 
-export const A11Y_STORAGE_KEY = 'bdp.a11y.v1';
+export { A11Y_STORAGE_KEY };
 
 interface AccessibilityStore extends AccessibilityPreferences {
   increaseFont: () => void;
