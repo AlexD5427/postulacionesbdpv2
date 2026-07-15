@@ -169,11 +169,149 @@
     position: fixed;
     inset: 0;
     z-index: var(--z-base);
+    overflow: hidden;
     background:
       radial-gradient(60rem 60rem at 12% -10%, rgb(var(--ambient-glow) / 0.35), transparent 60%),
       radial-gradient(50rem 50rem at 100% 0%, rgb(var(--color-accent) / 0.12), transparent 55%),
       linear-gradient(180deg, rgb(var(--ambient-1)) 0%, rgb(var(--ambient-2)) 55%, rgb(var(--ambient-3)) 100%);
     pointer-events: none;
+  }
+  /* Two large, slowly drifting glow orbs give the backdrop gentle life without
+     any JS. Disabled under reduced motion / reduced transparency. */
+  .ambient-bg::before,
+  .ambient-bg::after {
+    content: '';
+    position: absolute;
+    width: 45rem;
+    height: 45rem;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0.5;
+    will-change: transform;
+  }
+  .ambient-bg::before {
+    top: -14rem;
+    left: -10rem;
+    background: radial-gradient(circle, rgb(var(--color-primary) / 0.4), transparent 65%);
+  }
+  .ambient-bg::after {
+    bottom: -16rem;
+    right: -12rem;
+    background: radial-gradient(circle, rgb(var(--color-accent) / 0.3), transparent 65%);
+  }
+  :not([data-motion='reduced']) .ambient-bg::before {
+    animation: ambient-drift-a 26s ease-in-out infinite;
+  }
+  :not([data-motion='reduced']) .ambient-bg::after {
+    animation: ambient-drift-b 32s ease-in-out infinite;
+  }
+  [data-transparency='reduced'] .ambient-bg::before,
+  [data-transparency='reduced'] .ambient-bg::after {
+    display: none;
+  }
+  @keyframes ambient-drift-a {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(6rem, 4rem, 0) scale(1.12);
+    }
+  }
+  @keyframes ambient-drift-b {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(-5rem, -3rem, 0) scale(1.08);
+    }
+  }
+
+  /* ---- Liquid Glass: moving specular sheen (premium surfaces) ------------ */
+  .glass,
+  .glass-elevated,
+  .glass-floating {
+    position: relative;
+  }
+  .glass-sheen {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .glass-sheen::after {
+    content: '';
+    position: absolute;
+    inset: -40% -10%;
+    z-index: 0;
+    background: linear-gradient(
+      115deg,
+      transparent 38%,
+      rgb(var(--glass-highlight) / 0.28) 48%,
+      rgb(var(--glass-highlight) / 0) 60%
+    );
+    background-size: 250% 250%;
+    pointer-events: none;
+    opacity: 0.55;
+    mix-blend-mode: overlay;
+  }
+  :not([data-motion='reduced']) .glass-sheen::after {
+    animation: glass-sheen 11s ease-in-out infinite;
+  }
+  [data-transparency='reduced'] .glass-sheen::after {
+    display: none;
+  }
+  @keyframes glass-sheen {
+    0% {
+      background-position: 120% 0;
+    }
+    55%,
+    100% {
+      background-position: -40% 0;
+    }
+  }
+
+  /* ---- Interactive surfaces: hover lift + light sweep ------------------- */
+  .glass-interactive {
+    position: relative;
+    overflow: hidden;
+    transition:
+      transform var(--duration-md) var(--ease-spring-soft),
+      box-shadow var(--duration-md) var(--ease-out),
+      border-color var(--duration-md) var(--ease-out);
+    will-change: transform;
+  }
+  .glass-interactive:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-glass-xl);
+    border-color: rgb(var(--color-primary) / 0.35);
+  }
+  .glass-interactive::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 45%;
+    height: 100%;
+    z-index: 1;
+    background: linear-gradient(
+      110deg,
+      transparent,
+      rgb(var(--glass-highlight) / 0.35),
+      transparent
+    );
+    transform: skewX(-18deg);
+    transition: left var(--duration-xl) var(--ease-out);
+    pointer-events: none;
+  }
+  :not([data-motion='reduced']) .glass-interactive:hover::before {
+    left: 130%;
+  }
+  [data-transparency='reduced'] .glass-interactive::before {
+    display: none;
+  }
+  [data-motion='reduced'] .glass-interactive {
+    transition: none;
   }
 
   /* Skeleton shimmer used by loading states. */
@@ -206,16 +344,46 @@
 @layer utilities {
   .container-page {
     width: 100%;
-    max-width: 80rem;
+    /* Wider comfortable measure on large displays without spanning edge-to-edge;
+       the fluid side padding keeps generous gutters on ultrawide screens. */
+    max-width: 90rem;
     margin-inline: auto;
-    padding-inline: clamp(1rem, 4vw, 2.5rem);
+    padding-inline: clamp(1rem, 5vw, 4rem);
+  }
+
+  /* A slightly narrower measure for long-form reading pages (legal, help). */
+  .container-prose {
+    width: 100%;
+    max-width: 64rem;
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 5vw, 4rem);
   }
 
   .text-gradient {
-    background: linear-gradient(120deg, rgb(var(--color-primary)), rgb(var(--color-accent)));
+    background: linear-gradient(
+      120deg,
+      rgb(var(--color-primary)),
+      rgb(var(--color-accent)) 55%,
+      rgb(var(--color-primary))
+    );
+    background-size: 200% 100%;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+    /* Soft luminous halo behind the gradient headline. */
+    filter: drop-shadow(0 4px 24px rgb(var(--color-primary) / 0.22));
+  }
+  :not([data-motion='reduced']) .text-gradient-animated {
+    animation: text-gradient-pan 9s ease-in-out infinite;
+  }
+  @keyframes text-gradient-pan {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
   }
 
   /* Comfortable reading mode — wider spacing, capped measure. */

@@ -20,7 +20,7 @@ export function JobCard({ job }: { job: JobSummary }) {
   const closingSoon = days !== null && days >= 0 && days <= 7;
 
   return (
-    <Card padding="none" radius="3xl" className="group h-full overflow-hidden">
+    <Card padding="none" radius="3xl" className="group glass-interactive h-full overflow-hidden">
       <div className="relative aspect-[16/9] overflow-hidden bg-muted">
         {job.coverImageUrl ? (
           <InteractiveImage

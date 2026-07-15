@@ -12,8 +12,19 @@
  *
  * Notes:
  * - `'unsafe-inline'` for styles is required by Next.js/Tailwind runtime style
- *   injection. Scripts do NOT use `'unsafe-inline'`; Next injects a nonce/hash
- *   for its bootstrap. In dev we relax script-src for React refresh only.
+ *   injection.
+ * - Scripts require `'unsafe-inline'` too. Next.js (App Router) bootstraps and
+ *   streams the app through inline `<script>` tags (e.g. `self.__next_f.push`),
+ *   and this project also runs small inline bootstraps for the theme and the
+ *   accessibility preferences before first paint. Those inline scripts are NOT
+ *   nonced automatically: Next only adds a nonce when a CSP with a nonce is set
+ *   from *middleware* per request, which would force every route to render
+ *   dynamically and defeat static optimisation. Since the portal ships static
+ *   pages and must run on Vercel out of the box, we allow `'unsafe-inline'`
+ *   here. Without it the browser blocks every inline script, React never
+ *   hydrates and the page renders blank. `object-src 'none'` + `base-uri
+ *   'self'` keep the most dangerous injection vectors closed.
+ * - `'unsafe-eval'` is added in development only for React Fast Refresh.
  * - Media/image origins mirror `next.config.mjs` `images.remotePatterns`.
  */
 function contentSecurityPolicy() {
@@ -21,8 +32,7 @@ function contentSecurityPolicy() {
 
   const directives = {
     'default-src': ["'self'"],
-    // 'unsafe-eval' is only permitted in development for React Fast Refresh.
-    'script-src': ["'self'", ...(isDev ? ["'unsafe-eval'"] : [])],
+    'script-src': ["'self'", "'unsafe-inline'", ...(isDev ? ["'unsafe-eval'"] : [])],
     // Tailwind + Next inject runtime <style> tags; inline styles are required.
     'style-src': ["'self'", "'unsafe-inline'"],
     'img-src': ["'self'", 'data:', 'blob:', 'https://images.unsplash.com', 'https://*.supabase.co', 'https://*.r2.dev'],

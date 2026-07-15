@@ -4,7 +4,7 @@ import './globals.css';
 import { Providers } from './providers';
 import { appConfig } from '@/core/config/app-config';
 import { assertProviderConfig } from '@/core/config/env';
-import { A11Y_STORAGE_KEY } from '@/features/accessibility/state/accessibility-store';
+import { A11Y_STORAGE_KEY } from '@/features/accessibility/state/storage-key';
 import { AccessibilityLauncher } from '@/features/accessibility/components/AccessibilityLauncher';
 import { SkipLink } from '@/shared/components/SkipLink';
 
