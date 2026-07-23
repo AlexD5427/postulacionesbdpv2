@@ -5,7 +5,15 @@ Frontend público, accesible y **backend-agnóstico** para el reclutamiento y la
 módulo público** de una futura plataforma HRIS/HCM ("People Portal"), con límites arquitectónicos
 claros para crecer sin reescribir el frontend.
 
-Toda la interfaz está en **español (Latinoamérica)**.
+La interfaz se ofrece en **cuatro idiomas** — español (Latinoamérica, fuente de verdad), inglés,
+quechua (Runa Simi) y aymara — con un selector de idioma. Ver [`docs/I18N.md`](docs/I18N.md).
+
+> **Rediseño 2026 "Liquid Glass BDP":** se reescribió por completo la capa visual fusionando el
+> material Liquid Glass (línea madre) con un lenguaje editorial de paneles a sangre, tarjetas
+> flotantes, marquees y transiciones tipo iOS/Figma, recoloreado a la marca del banco (azul
+> `#004282` + cian `#00b0d8`). Incluye preloader de marca, dock flotante estilo macOS, buscador
+> ⌘K, y un centro de accesibilidad ampliado (daltonismo, lectura en voz alta, fuente legible,
+> regla de lectura, cursor grande). Ver [`docs/DOCUMENTO_EXPLICATIVO_REDISENO.md`](docs/DOCUMENTO_EXPLICATIVO_REDISENO.md).
 
 > **Reglas de producto no negociables**: el portal nunca muestra al candidato una línea de tiempo del
 > proceso interno, ni puntajes de afinidad/match, ni decisiones automatizadas de empleo. La telemetría
@@ -24,9 +32,10 @@ Toda la interfaz está en **español (Latinoamérica)**.
 | Estado servidor | **TanStack Query** | Caché, reintentos y estados de carga/errores. |
 | Estado cliente | **Zustand** | Accesibilidad y preferencias locales (poco estado). |
 | Formularios | **React Hook Form** + **Zod** | Validación declarativa y accesible. |
-| Movimiento | **Motion for React (framer-motion)** | Sistema de movimiento con *reduced-motion*. |
+| Movimiento | **Motion for React (framer-motion)** + **Lenis** (scroll suave) | Sistema de movimiento con *reduced-motion*. |
 | Primitivos UI | **Radix UI** | Accesibilidad probada (diálogos, tabs, etc.). |
 | Íconos | **lucide-react** | — |
+| Internacionalización | **i18n propio (sin dependencias)** | 4 idiomas: es / en / qu / ay. |
 | Pruebas | **Vitest** + **Testing Library** + **Playwright** + **axe-core** | Unitarias, componentes, e2e y accesibilidad. |
 
 No se instalaron GSAP, Three.js/React Three Fiber ni Storybook: el WebGL es un *tier* opcional
@@ -101,7 +110,8 @@ el proveedor y **degrada a mock** si faltan credenciales, de modo que la app sie
 | Documento | Contenido |
 | --- | --- |
 | [ARCHITECTURE](docs/ARCHITECTURE.md) | Estructura por *features*, límites y flujo de datos. |
-| [DESIGN_SYSTEM](docs/DESIGN_SYSTEM.md) | Tokens, primitivos, movimiento, temas. |
+| [DESIGN_SYSTEM](docs/DESIGN_SYSTEM.md) | Tokens, primitivos, movimiento, temas, rediseño 2026. |
+| [I18N](docs/I18N.md) | Sistema de 4 idiomas y la regla obligatoria de traducción. |
 | [LIQUID_GLASS_IMPLEMENTATION](docs/LIQUID_GLASS_IMPLEMENTATION.md) | Material "Liquid Glass" y sus *fallbacks*. |
 | [ACCESSIBILITY](docs/ACCESSIBILITY.md) | WCAG 2.2 AA, centro de accesibilidad, QA manual. |
 | [SECURITY](docs/SECURITY.md) | Cabeceras, CSP, límites de auth, logging redactado. |

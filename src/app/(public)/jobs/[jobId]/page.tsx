@@ -9,6 +9,7 @@ import { GlassSurface } from '@/design-system/primitives/GlassSurface';
 import { InteractiveImage } from '@/features/media-content/components/InteractiveImage';
 import { JobBlockRenderer } from '@/features/jobs/components/blocks/JobBlockRenderer';
 import { SaveJobButton } from '@/features/jobs/components/SaveJobButton';
+import { RecentJobRecorder } from '@/features/jobs/components/RecentJobRecorder';
 import {
   EMPLOYMENT_TYPE_LABELS,
   EXPERIENCE_LEVEL_LABELS,
@@ -39,7 +40,8 @@ export default async function JobDetailPage({ params }: Params) {
   const applyHref = `/candidate/applications/new?job=${encodeURIComponent(job.meta.id)}`;
 
   return (
-    <article className="pb-24 md:pb-10">
+    <article className="pb-28">
+      <RecentJobRecorder reference={job.reference} title={job.title} city={job.city} />
       {/* HERO */}
       <header className="container-page pt-8">
         <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
@@ -132,7 +134,7 @@ export default async function JobDetailPage({ params }: Params) {
 
       {/* Sticky mobile apply bar */}
       {!closed && (
-        <div className="glass-navigation fixed inset-x-3 bottom-3 z-nav flex items-center justify-between gap-3 rounded-full px-4 py-2.5 md:hidden">
+        <div className="glass-navigation fixed inset-x-3 bottom-24 z-nav flex items-center justify-between gap-3 rounded-full px-4 py-2.5 md:hidden">
           <span className="truncate text-sm font-medium">{job.title}</span>
           <Button asChild size="sm">
             <Link href={applyHref}>Postular</Link>

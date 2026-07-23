@@ -21,18 +21,39 @@
 ## Centro de accesibilidad
 
 Panel persistente (botón flotante en todas las páginas) con controles **independientes** que
-persisten localmente y se aplican antes del *paint*:
+persisten localmente y se aplican antes del *paint*. Todo el panel está traducido a los 4 idiomas:
 
+- **Idioma**: cambio entre español, inglés, quechua y aymara.
 - Aumentar / reducir / restaurar tamaño de texto.
+- Tema (claro / oscuro / sistema).
+- **Filtro para daltonismo**: protanopia, deuteranopia, tritanopia (matrices `feColorMatrix`
+  aplicadas en `<html>`, de modo que también corrigen el *chrome* fijo como el dock).
 - Alto contraste.
+- **Cursor grande** (puntero SVG ampliado, sin descarga de red).
+- **Fuente legible** para dislexia (pila humanista del sistema + mayor interletrado/interpalabra;
+  no se descargan fuentes web).
+- Modo de lectura cómoda (interlineado y ancho de línea).
+- **Regla de lectura**: una banda que sigue el cursor para no perder la línea.
+- **Lectura en voz alta (TTS)**: usa la Web Speech API para leer el contenido principal en el
+  idioma activo; se degrada con aviso si el navegador no la admite.
 - Reducir movimiento.
 - Reducir transparencia (vuelve opaco el vidrio).
-- Modo de lectura cómoda (interlineado y ancho de línea).
 - Resaltar enlaces y botones.
 - Foco reforzado.
+- **Posición del dock** (abajo por defecto / arriba).
 - Restaurar valores predeterminados.
 
 Respeta además los ajustes del sistema operativo (`prefers-reduced-motion`, esquema de color).
+
+> ⚠️ Los filtros de daltonismo son un **apoyo perceptual** (las necesidades individuales varían);
+> conviven con el alto contraste y con las señales de estado que **no dependen del color** (texto +
+> forma) usadas en todo el portal.
+
+### Movimiento y scroll
+
+El scroll suave (Lenis) y todas las animaciones (preloader, reveals, marquee, orbes, dock magnético)
+se **desactivan** cuando el usuario o el sistema piden *movimiento reducido*: Lenis no se inicializa,
+`Reveal` renderiza estático y las animaciones CSS quedan neutralizadas.
 
 ## Evaluaciones
 

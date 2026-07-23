@@ -25,12 +25,25 @@
   body {
     background-color: rgb(var(--color-background));
     color: rgb(var(--color-foreground));
-    font-family: var(--font-sans);
+    font-family: var(--font-reading);
     font-size: var(--text-base);
     line-height: 1.6;
     min-height: 100dvh;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* Dyslexia-friendly reading mode (accessibility center). We cannot fetch web
+     fonts in this environment, so we lean on a legible humanist system stack
+     plus generous letter/word spacing — the evidence-backed levers. */
+  [data-reading-font='legible'] {
+    --font-reading: 'Atkinson Hyperlegible', 'Verdana', 'Trebuchet MS', 'Tahoma',
+      var(--font-sans);
+  }
+  [data-reading-font='legible'] body {
+    letter-spacing: 0.03em;
+    word-spacing: 0.08em;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -436,6 +449,300 @@
 }
 
 /* ==========================================================================
+   BRAND SECTIONS + 2026 MOTION LANGUAGE
+   The reference site "flows" with big coloured panels, floating cards, marquees
+   and buttery iOS-style transitions. Re-expressed here in BDP blue↔cyan, with
+   Liquid Glass kept as the mother material. Every animation degrades under
+   reduced motion / reduced transparency.
+   ========================================================================== */
+@layer components {
+  /* ---- Brand gradient panel (the recoloured "orange" sections) ---------- */
+  .section-brand {
+    position: relative;
+    isolation: isolate;
+    color: rgb(var(--on-brand));
+    background: var(--grad-brand-strong);
+    overflow: hidden;
+  }
+  .section-brand :is(h1, h2, h3, h4) {
+    color: rgb(var(--on-brand));
+  }
+  /* Animated aurora mesh that slowly breathes behind brand panels. */
+  .section-brand::before {
+    content: '';
+    position: absolute;
+    inset: -20%;
+    z-index: -1;
+    background:
+      radial-gradient(40% 55% at 15% 20%, rgb(var(--p-cyan-400) / 0.55), transparent 60%),
+      radial-gradient(45% 50% at 85% 15%, rgb(var(--p-blue-400) / 0.5), transparent 60%),
+      radial-gradient(50% 60% at 70% 90%, rgb(var(--p-cyan-500) / 0.4), transparent 65%);
+    background-size: 200% 200%;
+    filter: blur(8px);
+    opacity: 0.9;
+  }
+  :not([data-motion='reduced']) .section-brand::before {
+    animation: aurora-pan 22s ease-in-out infinite;
+  }
+  @keyframes aurora-pan {
+    0%,
+    100% {
+      background-position: 0% 50%, 100% 0%, 50% 100%;
+    }
+    50% {
+      background-position: 100% 50%, 0% 100%, 40% 0%;
+    }
+  }
+
+  /* Fine film grain overlay adds depth to flat colour fields. */
+  .grain::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Mesh-tinted glass used for premium hero surfaces. */
+  .glass-brand {
+    background:
+      linear-gradient(135deg, rgb(var(--p-blue-600) / 0.16), rgb(var(--p-cyan-500) / 0.12)),
+      rgb(var(--glass-tint) / var(--glass-alpha-standard));
+    border: 1px solid rgb(var(--glass-border) / var(--glass-border-alpha));
+    box-shadow: var(--shadow-glass-lg);
+    -webkit-backdrop-filter: blur(var(--blur-lg)) saturate(var(--glass-saturate));
+    backdrop-filter: blur(var(--blur-lg)) saturate(var(--glass-saturate));
+  }
+
+  /* ---- Floating decorative discs/orbs (hero) ---------------------------- */
+  .liquid-orb {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--grad-brand);
+    filter: blur(0.5px);
+    box-shadow:
+      inset 0 8px 30px rgb(255 255 255 / 0.35),
+      inset 0 -10px 30px rgb(var(--p-blue-950) / 0.25),
+      var(--shadow-glass-lg);
+    opacity: 0.92;
+  }
+  :not([data-motion='reduced']) .liquid-orb {
+    animation: float var(--orb-float, 7s) ease-in-out infinite;
+  }
+
+  /* ---- Marquee (skills / areas / trust strips) -------------------------- */
+  .marquee {
+    display: flex;
+    width: 100%;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+  .marquee__track {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 100%;
+    padding-right: var(--space-3);
+  }
+  :not([data-motion='reduced']) .marquee__track {
+    animation: marquee var(--marquee-duration, 42s) linear infinite;
+  }
+  :not([data-motion='reduced']) .marquee--reverse .marquee__track {
+    animation-name: marquee-reverse;
+  }
+  .marquee:hover .marquee__track {
+    animation-play-state: paused;
+  }
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @keyframes marquee-reverse {
+    from {
+      transform: translateX(-50%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  /* ---- The floating Dock (macOS-flavoured, bottom by default) ----------- */
+  .dock-shell {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: var(--z-nav);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.4rem;
+    border-radius: var(--radius-full);
+  }
+  .dock-shell[data-position='bottom'] {
+    bottom: max(0.9rem, env(safe-area-inset-bottom));
+  }
+  .dock-shell[data-position='top'] {
+    /* Sits just below the sticky navbar so the two never overlap. */
+    top: calc(env(safe-area-inset-top) + 4.75rem);
+  }
+  .dock-item {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    color: rgb(var(--color-muted-foreground));
+    transition:
+      transform var(--duration-md) var(--ease-spring-soft),
+      background-color var(--duration-sm) var(--ease-out),
+      color var(--duration-sm) var(--ease-out);
+    will-change: transform;
+  }
+  .dock-item:hover {
+    color: rgb(var(--color-foreground));
+    background-color: rgb(var(--color-foreground) / 0.06);
+  }
+  .dock-item[data-active='true'] {
+    color: rgb(var(--color-primary));
+    background-color: rgb(var(--color-primary) / 0.12);
+  }
+  .dock-item[data-active='true']::after {
+    content: '';
+    position: absolute;
+    width: 0.32rem;
+    height: 0.32rem;
+    border-radius: 50%;
+    background: rgb(var(--color-primary));
+  }
+  .dock-shell[data-position='bottom'] .dock-item[data-active='true']::after {
+    bottom: -0.12rem;
+  }
+  .dock-shell[data-position='top'] .dock-item[data-active='true']::after {
+    top: -0.12rem;
+  }
+
+  /* ---- Preloader ("Trabaja en BDP S.A.M.") ------------------------------ */
+  .preloader {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-preloader);
+    display: grid;
+    place-items: center;
+    background: var(--grad-brand-strong);
+    color: rgb(var(--on-brand));
+  }
+
+  /* ---- Spotlight card: cursor-follow glow ------------------------------- */
+  .spotlight {
+    position: relative;
+    overflow: hidden;
+  }
+  .spotlight::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity var(--duration-md) var(--ease-out);
+    background: radial-gradient(
+      18rem 18rem at var(--spot-x, 50%) var(--spot-y, 0%),
+      rgb(var(--color-secondary) / 0.22),
+      transparent 60%
+    );
+    pointer-events: none;
+  }
+  .spotlight:hover::before {
+    opacity: 1;
+  }
+  [data-transparency='reduced'] .spotlight::before {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   ACCESSIBILITY MODES v2 — colour vision, reading ruler, cursor
+   ========================================================================== */
+@layer utilities {
+  /* Colour-vision assistance. The SVG feColorMatrix filters live in
+     <ColorVisionFilters/> (rendered once in the root layout). We apply them at
+     the <html> level so fixed chrome (dock, launcher) is corrected too. */
+  [data-colorblind='protanopia'] {
+    filter: url('#bdp-cvd-protanopia');
+  }
+  [data-colorblind='deuteranopia'] {
+    filter: url('#bdp-cvd-deuteranopia');
+  }
+  [data-colorblind='tritanopia'] {
+    filter: url('#bdp-cvd-tritanopia');
+  }
+
+  /* Larger pointer for low-vision / motor needs. A crisp SVG arrow encoded as
+     a data-URI so no network fetch is required. */
+  [data-cursor='large'],
+  [data-cursor='large'] * {
+    cursor:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cpath d='M8 4 L8 40 L18 30 L25 44 L31 41 L24 27 L38 27 Z' fill='white' stroke='black' stroke-width='2.5' stroke-linejoin='round'/%3E%3C/svg%3E")
+        6 4,
+      auto;
+  }
+
+  /* Reading ruler band (component sets --ruler-y). */
+  .reading-ruler {
+    position: fixed;
+    left: 0;
+    right: 0;
+    height: 2.6rem;
+    top: calc(var(--ruler-y, 50vh) - 1.3rem);
+    z-index: var(--z-a11y);
+    pointer-events: none;
+    border-top: 2px solid rgb(var(--color-primary) / 0.5);
+    border-bottom: 2px solid rgb(var(--color-primary) / 0.5);
+    background: rgb(var(--color-primary) / 0.08);
+    box-shadow: 0 0 0 100vmax rgb(var(--color-slate-950, 10 15 26) / 0);
+  }
+
+  /* Scroll progress bar (top of viewport). */
+  .scroll-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    z-index: var(--z-toast);
+    transform-origin: 0 50%;
+    background: var(--grad-brand);
+    pointer-events: none;
+  }
+
+  /* Oversized editorial headline used by hero/section titles. */
+  .text-display {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 0.98;
+    text-wrap: balance;
+  }
+
+  /* Reveal-by-word/line helper for headline animation done in CSS as a
+     fallback (JS variant handles the richer version). */
+  .headline-underline {
+    background-image: linear-gradient(rgb(var(--color-secondary)), rgb(var(--color-secondary)));
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    background-size: 100% 0.12em;
+    padding-bottom: 0.06em;
+  }
+}
+
+/* ==========================================================================
    PRINT — used by the CV preview "Imprimir / Guardar PDF".
    Hides app chrome and flattens glass so the CV prints cleanly.
    ========================================================================== */
@@ -444,7 +751,11 @@
   header,
   nav,
   footer,
-  .skip-link {
+  .skip-link,
+  .dock-shell,
+  .preloader,
+  .scroll-progress,
+  .reading-ruler {
     display: none !important;
   }
   body {

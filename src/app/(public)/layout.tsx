@@ -6,7 +6,8 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
   return (
     <div className="relative flex min-h-dvh flex-col">
       <PublicNavbar />
-      <main id="main-content" className="flex-1">
+      {/* Bottom padding clears the floating dock so content is never hidden. */}
+      <main id="main-content" className="flex-1 pb-28">
         {children}
       </main>
       <PublicFooter />

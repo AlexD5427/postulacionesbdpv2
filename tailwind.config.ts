@@ -8,9 +8,7 @@ import type { Config } from 'tailwindcss';
  */
 const config: Config = {
   darkMode: ['class', '[data-theme="dark"]'],
-  content: [
-    './src/**/*.{ts,tsx,mdx}',
-  ],
+  content: ['./src/**/*.{ts,tsx,mdx}'],
   theme: {
     extend: {
       colors: {
@@ -25,9 +23,17 @@ const config: Config = {
           DEFAULT: 'rgb(var(--color-primary) / <alpha-value>)',
           foreground: 'rgb(var(--color-primary-foreground) / <alpha-value>)',
         },
+        secondary: {
+          DEFAULT: 'rgb(var(--color-secondary) / <alpha-value>)',
+          foreground: 'rgb(var(--color-secondary-foreground) / <alpha-value>)',
+        },
         accent: {
           DEFAULT: 'rgb(var(--color-accent) / <alpha-value>)',
           foreground: 'rgb(var(--color-accent-foreground) / <alpha-value>)',
+        },
+        'on-brand': {
+          DEFAULT: 'rgb(var(--on-brand) / <alpha-value>)',
+          muted: 'rgb(var(--on-brand-muted) / <alpha-value>)',
         },
         success: 'rgb(var(--color-success) / <alpha-value>)',
         warning: 'rgb(var(--color-warning) / <alpha-value>)',
@@ -43,9 +49,16 @@ const config: Config = {
         xl: 'var(--radius-xl)',
         '2xl': 'var(--radius-2xl)',
         '3xl': 'var(--radius-3xl)',
+        '4xl': 'var(--radius-4xl)',
       },
       fontFamily: {
         sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'var(--font-sans)', 'system-ui', 'sans-serif'],
+        reading: ['var(--font-reading)', 'var(--font-sans)', 'system-ui', 'sans-serif'],
+      },
+      fontSize: {
+        '6xl': 'var(--text-6xl)',
+        '7xl': 'var(--text-7xl)',
       },
       boxShadow: {
         'glass-sm': 'var(--shadow-glass-sm)',
@@ -62,24 +75,43 @@ const config: Config = {
         modal: 'var(--z-modal)',
         a11y: 'var(--z-a11y)',
         toast: 'var(--z-toast)',
+        preloader: 'var(--z-preloader)',
       },
       transitionTimingFunction: {
         'glass-in': 'var(--ease-in)',
         'glass-out': 'var(--ease-out)',
         'glass-standard': 'var(--ease-standard)',
+        ios: 'var(--ease-ios)',
+        'spring-soft': 'var(--ease-spring-soft)',
+        'spring-bounce': 'var(--ease-spring-bounce)',
       },
       keyframes: {
         'fade-in': {
           from: { opacity: '0' },
           to: { opacity: '1' },
         },
-        'shimmer': {
+        shimmer: {
           '100%': { transform: 'translateX(100%)' },
+        },
+        marquee: {
+          from: { transform: 'translateX(0)' },
+          to: { transform: 'translateX(-50%)' },
+        },
+        'marquee-reverse': {
+          from: { transform: 'translateX(-50%)' },
+          to: { transform: 'translateX(0)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-12px)' },
         },
       },
       animation: {
         'fade-in': 'fade-in var(--duration-md) var(--ease-standard) both',
-        'shimmer': 'shimmer 1.6s infinite',
+        shimmer: 'shimmer 1.6s infinite',
+        marquee: 'marquee var(--marquee-duration, 40s) linear infinite',
+        'marquee-reverse': 'marquee-reverse var(--marquee-duration, 40s) linear infinite',
+        float: 'float 6s ease-in-out infinite',
       },
     },
   },
