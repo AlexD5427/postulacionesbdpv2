@@ -23,6 +23,10 @@ interface AccessibilityStore extends AccessibilityPreferences {
   setReading: (value: AccessibilityPreferences['reading']) => void;
   setHighlightLinks: (value: boolean) => void;
   setEnhancedFocus: (value: boolean) => void;
+  setColorVision: (value: AccessibilityPreferences['colorVision']) => void;
+  setReadingFont: (value: AccessibilityPreferences['readingFont']) => void;
+  setReadingRuler: (value: boolean) => void;
+  setLargeCursor: (value: boolean) => void;
   resetAll: () => void;
 }
 
@@ -42,6 +46,10 @@ export const useAccessibilityStore = create<AccessibilityStore>()(
       setReading: (reading) => set({ reading }),
       setHighlightLinks: (highlightLinks) => set({ highlightLinks }),
       setEnhancedFocus: (enhancedFocus) => set({ enhancedFocus }),
+      setColorVision: (colorVision) => set({ colorVision }),
+      setReadingFont: (readingFont) => set({ readingFont }),
+      setReadingRuler: (readingRuler) => set({ readingRuler }),
+      setLargeCursor: (largeCursor) => set({ largeCursor }),
       resetAll: () => set({ ...DEFAULT_ACCESSIBILITY_PREFERENCES }),
     }),
     { name: A11Y_STORAGE_KEY },
@@ -63,6 +71,9 @@ export function applyAccessibilityToDocument(prefs: AccessibilityPreferences): v
   el.setAttribute('data-reading', prefs.reading);
   el.setAttribute('data-highlight-links', String(prefs.highlightLinks));
   el.setAttribute('data-focus', prefs.enhancedFocus ? 'enhanced' : 'normal');
+  el.setAttribute('data-colorblind', prefs.colorVision);
+  el.setAttribute('data-reading-font', prefs.readingFont);
+  el.setAttribute('data-cursor', prefs.largeCursor ? 'large' : 'normal');
 
   const prefersReducedMotion =
     typeof window !== 'undefined' &&

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { JobsDirectory } from '@/features/jobs/components/JobsDirectory';
+import { RecentlyViewedJobs } from '@/features/jobs/components/RecentlyViewedJobs';
 
 export const metadata: Metadata = {
   title: 'Convocatorias',
@@ -15,7 +16,9 @@ export default function JobsPage() {
         title="Convocatorias abiertas"
         description="Encuentra la posición que se ajusta a tu experiencia e intereses. Postular es gratuito."
       />
+      <RecentlyViewedJobs />
       <JobsDirectory />
     </div>
   );
 }
+

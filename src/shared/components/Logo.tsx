@@ -1,27 +1,59 @@
 import Link from 'next/link';
 import { cn } from '@/shared/lib/cn';
 import { appConfig } from '@/core/config/app-config';
+import { BdpMark, type BdpTone } from './brand/BdpMark';
 
 /**
- * Brand mark. The bank can later replace the SVG/logotype from configuration
- * without touching layout code. Uses currentColor so it adapts to theme.
+ * Brand lockup: the official BDP isotype + the "BDP · Talento" wordmark.
+ *
+ * `tone` controls the isotype fill so the lockup reads on light, dark and brand
+ * gradient surfaces. The text colour is driven by `currentColor` on light/dark
+ * and forced white when placed over a brand panel.
  */
-export function Logo({ className, href = '/' }: { className?: string; href?: string }) {
+export function Logo({
+  className,
+  href = '/',
+  tone = 'brand',
+  onBrand = false,
+}: {
+  className?: string;
+  href?: string;
+  tone?: BdpTone;
+  /** When true, the wordmark is rendered white for placement over brand panels. */
+  onBrand?: boolean;
+}) {
   return (
     <Link
       href={href}
-      className={cn('inline-flex items-center gap-2.5 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', className)}
-      aria-label={`${appConfig.shortName} — inicio`}
+      className={cn(
+        'group inline-flex items-center gap-2.5 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        className,
+      )}
+      aria-label={`${appConfig.shortName} — ${appConfig.organization.legalName}`}
     >
-      <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-glass-sm">
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden>
-          <path d="M4 20V9l8-5 8 5v11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M9 20v-6h6v6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+      <span
+        className={cn(
+          'grid h-10 w-10 place-items-center rounded-2xl p-1.5 shadow-glass-sm transition-transform duration-[var(--duration-md)] ease-[var(--ease-spring-soft)] group-hover:-rotate-6 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:rotate-0 motion-reduce:group-hover:scale-100',
+          onBrand ? 'bg-white/15 backdrop-blur' : 'glass-subtle',
+        )}
+      >
+        <BdpMark tone={tone} className="h-full w-full" />
       </span>
       <span className="flex flex-col leading-none">
-        <span className="text-sm font-bold tracking-tight text-foreground">BDP</span>
-        <span className="text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
+        <span
+          className={cn(
+            'text-sm font-extrabold tracking-tight',
+            onBrand ? 'text-white' : 'text-foreground',
+          )}
+        >
+          BDP
+        </span>
+        <span
+          className={cn(
+            'text-[0.62rem] font-semibold uppercase tracking-[0.22em]',
+            onBrand ? 'text-on-brand-muted' : 'text-muted-foreground',
+          )}
+        >
           Talento
         </span>
       </span>

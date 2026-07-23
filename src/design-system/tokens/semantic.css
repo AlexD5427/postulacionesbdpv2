@@ -20,24 +20,45 @@
   --color-muted: var(--p-slate-100);
   --color-muted-foreground: var(--p-slate-600);
 
-  --color-primary: var(--p-blue-600);
+  --color-primary: var(--p-blue-700);
   --color-primary-foreground: var(--p-white);
-  --color-accent: var(--p-gold-500);
-  --color-accent-foreground: var(--p-slate-950);
+  /* Cyan is the second brand voice. `accent` stays legible as text; the
+     brighter cyan-500 is reserved for fills/gradients via --grad-* below. */
+  --color-secondary: var(--p-cyan-500);
+  --color-secondary-foreground: var(--p-blue-950);
+  --color-accent: var(--p-cyan-600);
+  --color-accent-foreground: var(--p-white);
 
   --color-success: var(--p-green-600);
   --color-warning: var(--p-amber-600);
   --color-danger: var(--p-red-600);
-  --color-info: var(--p-sky-500);
+  --color-info: var(--p-cyan-600);
 
   --color-border: var(--p-slate-200);
-  --color-ring: var(--p-blue-500);
+  --color-ring: var(--p-cyan-500);
 
   /* Ambient page background gradient stops */
-  --ambient-1: 224 236 255;
-  --ambient-2: 244 246 250;
-  --ambient-3: 236 244 255;
-  --ambient-glow: var(--p-blue-300);
+  --ambient-1: 226 240 252;
+  --ambient-2: 244 247 251;
+  --ambient-3: 224 246 252;
+  --ambient-glow: var(--p-cyan-300);
+
+  /* Brand gradients (the "flow" of the reference, in BDP colours). */
+  --grad-brand: linear-gradient(135deg, rgb(var(--p-blue-700)), rgb(var(--p-cyan-500)));
+  --grad-brand-strong: linear-gradient(
+    130deg,
+    rgb(var(--p-blue-800)),
+    rgb(var(--p-blue-600)) 45%,
+    rgb(var(--p-cyan-500))
+  );
+  --grad-brand-soft: linear-gradient(
+    135deg,
+    rgb(var(--p-blue-600) / 0.14),
+    rgb(var(--p-cyan-500) / 0.14)
+  );
+  /* Foreground used ON TOP of a brand-gradient section (dark blue → cyan). */
+  --on-brand: 255 255 255;
+  --on-brand-muted: 214 235 248;
 }
 
 /* ---- DARK ---------------------------------------------------------------- */
@@ -49,23 +70,40 @@
   --color-muted: var(--p-slate-800);
   --color-muted-foreground: var(--p-slate-300);
 
-  --color-primary: var(--p-blue-400);
+  --color-primary: var(--p-cyan-400);
   --color-primary-foreground: var(--p-slate-950);
-  --color-accent: var(--p-gold-400);
+  --color-secondary: var(--p-cyan-400);
+  --color-secondary-foreground: var(--p-slate-950);
+  --color-accent: var(--p-cyan-300);
   --color-accent-foreground: var(--p-slate-950);
 
   --color-success: var(--p-green-500);
   --color-warning: var(--p-amber-500);
   --color-danger: var(--p-red-500);
-  --color-info: var(--p-sky-500);
+  --color-info: var(--p-cyan-400);
 
   --color-border: var(--p-slate-700);
-  --color-ring: var(--p-blue-300);
+  --color-ring: var(--p-cyan-400);
 
-  --ambient-1: 14 35 71;
-  --ambient-2: 11 16 26;
-  --ambient-3: 18 48 98;
+  --ambient-1: 6 37 71;
+  --ambient-2: 10 15 26;
+  --ambient-3: 12 60 78;
   --ambient-glow: var(--p-blue-700);
+
+  --grad-brand: linear-gradient(135deg, rgb(var(--p-blue-600)), rgb(var(--p-cyan-500)));
+  --grad-brand-strong: linear-gradient(
+    130deg,
+    rgb(var(--p-blue-800)),
+    rgb(var(--p-blue-600)) 45%,
+    rgb(var(--p-cyan-500))
+  );
+  --grad-brand-soft: linear-gradient(
+    135deg,
+    rgb(var(--p-blue-500) / 0.18),
+    rgb(var(--p-cyan-500) / 0.16)
+  );
+  --on-brand: 255 255 255;
+  --on-brand-muted: 200 226 242;
 }
 
 /* ---- HIGH CONTRAST (independent of light/dark) --------------------------- */
@@ -78,9 +116,11 @@
   --color-background: var(--p-white);
   --color-foreground: 0 0 0;
   --color-primary: var(--p-blue-800);
+  --color-accent: var(--p-cyan-800);
 }
 [data-contrast='high'][data-theme='dark'] {
   --color-background: 0 0 0;
   --color-foreground: 255 255 255;
-  --color-primary: var(--p-blue-200);
+  --color-primary: var(--p-cyan-300);
+  --color-accent: var(--p-cyan-200);
 }

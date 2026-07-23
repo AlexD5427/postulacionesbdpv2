@@ -8,6 +8,8 @@ import {
   applyAccessibilityToDocument,
   useAccessibilityStore,
 } from '@/features/accessibility/state/accessibility-store';
+import { applyLocaleToDocument, useI18nStore } from '@/features/i18n/i18n-store';
+import { SmoothScroll } from '@/features/shell/components/SmoothScroll';
 
 /**
  * Keeps <html> data-attributes in sync with the accessibility store. An inline
@@ -19,6 +21,15 @@ function AccessibilityEffect() {
   useEffect(() => {
     applyAccessibilityToDocument(prefs);
   }, [prefs]);
+  return null;
+}
+
+/** Keeps <html lang> in sync with the chosen locale (post-hydration updates). */
+function LocaleEffect() {
+  const locale = useI18nStore((s) => s.locale);
+  useEffect(() => {
+    applyLocaleToDocument(locale);
+  }, [locale]);
   return null;
 }
 
@@ -48,6 +59,8 @@ export function Providers({ children }: { children: ReactNode }) {
       >
         <TooltipProvider delayDuration={200}>
           <AccessibilityEffect />
+          <LocaleEffect />
+          <SmoothScroll />
           {children}
         </TooltipProvider>
       </ThemeProvider>

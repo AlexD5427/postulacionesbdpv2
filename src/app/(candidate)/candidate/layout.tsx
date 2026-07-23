@@ -1,10 +1,7 @@
 import type { ReactNode } from 'react';
 import { PublicNavbar } from '@/shared/components/PublicNavbar';
 import { RequireAuth } from '@/features/auth/components/RequireAuth';
-import {
-  CandidateSidebar,
-  CandidateBottomNav,
-} from '@/features/candidate-profile/components/CandidateNav';
+import { CandidateSidebar } from '@/features/candidate-profile/components/CandidateNav';
 
 export default function CandidateLayout({ children }: { children: ReactNode }) {
   return (
@@ -15,11 +12,11 @@ export default function CandidateLayout({ children }: { children: ReactNode }) {
           <aside className="hidden lg:block">
             <CandidateSidebar />
           </aside>
-          <main id="main-content" className="min-w-0 pb-24 lg:pb-0">
+          {/* Bottom padding clears the floating dock (primary nav on mobile). */}
+          <main id="main-content" className="min-w-0 pb-28">
             {children}
           </main>
         </div>
-        <CandidateBottomNav />
       </RequireAuth>
     </div>
   );
