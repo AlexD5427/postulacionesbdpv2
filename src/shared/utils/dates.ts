@@ -10,6 +10,11 @@ export function formatShortDate(iso: string): string {
   return format(new Date(iso), 'dd/MM/yyyy', { locale: es });
 }
 
+/** Date and time, e.g. "05/03/2026 14:32". Used on submission receipts. */
+export function formatDateTime(iso: string): string {
+  return format(new Date(iso), 'dd/MM/yyyy HH:mm', { locale: es });
+}
+
 /** Relative label, e.g. "hace 3 días". */
 export function formatRelative(iso: string): string {
   return formatDistanceToNow(new Date(iso), { addSuffix: true, locale: es });

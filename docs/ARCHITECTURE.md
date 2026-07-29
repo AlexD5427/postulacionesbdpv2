@@ -54,6 +54,14 @@ Componente (client) ──► hook TanStack Query ──► getDataProvider() �
   son Client Components con TanStack Query. El proveedor mock funciona en ambos entornos (memoria en
   servidor, `localStorage` en navegador).
 
+## Módulo temporal: evaluaciones públicas
+
+`src/features/public-assessments` + `src/infrastructure/evaluations` implementan la beta pública sin
+login (`/evaluaciones`). Sigue las mismas reglas que el resto (puerto en `core/data`, adaptadores en
+`infrastructure`, componentes que solo consumen *hooks*), pero **no** entra en el agregado
+`DataProvider`: su puerto es independiente para poder retirarse en un solo commit sin tocar los demás
+proveedores. Ver [`PUBLIC_ASSESSMENTS_BETA.md`](PUBLIC_ASSESSMENTS_BETA.md).
+
 ## Límites entre *features*
 
 - Se importa desde la "API pública" de cada *feature* (sus componentes/hooks exportados), evitando

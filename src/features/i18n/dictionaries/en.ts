@@ -24,6 +24,7 @@ export const en: Partial<Dictionary> = {
   'nav.jobs': 'Openings',
   'nav.help': 'Help',
   'nav.accessibility': 'Accessibility',
+  'nav.assessments': 'Assessments',
   'nav.login': 'Sign in',
   'nav.register': 'Create account',
   'nav.home': 'Home',
@@ -47,6 +48,7 @@ export const en: Partial<Dictionary> = {
   'dock.jobs': 'Openings',
   'dock.help': 'Help',
   'dock.accessibility': 'Accessibility',
+  'dock.assessments': 'Take an assessment',
   'dock.search': 'Search (⌘K)',
   'dock.account': 'My space',
   'dock.label': 'Quick access',
@@ -93,6 +95,14 @@ export const en: Partial<Dictionary> = {
   'home.offer.jobs.body': 'Explore opportunities that update in real time.',
   'home.offer.assessments.title': 'Fair assessments',
   'home.offer.assessments.body': 'Show your talent with clear, accessible assessments.',
+
+  // --- Landing: direct access to the public assessment module (beta) -------
+  'home.eval.badge': 'Direct access',
+  'home.eval.title': 'Did you receive an assessment code?',
+  'home.eval.body':
+    'Enter your name and ID number to take the assessment the Talent team shared with you. No account needed.',
+  'home.eval.cta': 'Take my assessment',
+  'home.eval.note': 'No sign-up · Works on mobile · Keyboard accessible',
 
   'home.how.title': 'How to apply',
   'home.how.subtitle': 'Four simple steps, no hassle.',

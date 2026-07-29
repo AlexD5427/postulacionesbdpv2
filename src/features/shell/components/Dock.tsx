@@ -305,6 +305,18 @@ export function Dock() {
         <Briefcase className="h-full w-full" aria-hidden />
       </DockCell>
 
+      {/* Public, login-free assessment module (temporary beta). */}
+      <DockCell
+        mouseX={mouseX}
+        reduced={reduced}
+        active={isActivePath(pathname, '/evaluaciones')}
+        label={t('dock.assessments')}
+        href="/evaluaciones"
+        position={position}
+      >
+        <ClipboardCheck className="h-full w-full" aria-hidden />
+      </DockCell>
+
       <DockCell
         mouseX={mouseX}
         reduced={reduced}

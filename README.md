@@ -103,6 +103,18 @@ desarrollo.
 Ajusta `NEXT_PUBLIC_DATA_MODE`. El *factory* en `src/infrastructure/providers/factory.ts` selecciona
 el proveedor y **degrada a mock** si faltan credenciales, de modo que la app siempre es ejecutable.
 
+### Evaluaciones públicas (beta)
+
+`/evaluaciones` permite a un candidato **sin cuenta** rendir una evaluación publicada en el ATS. Para
+conectarlo con el backend real basta una variable:
+
+```bash
+NEXT_PUBLIC_EVALUATIONS_APPS_SCRIPT_URL=https://script.google.com/macros/s/<ID>/exec
+```
+
+Sin ella, y en modo `mock`, el módulo usa datos de demostración y lo advierte en pantalla. Detalles,
+límites y pasos manuales en [`docs/PUBLIC_ASSESSMENTS_BETA.md`](docs/PUBLIC_ASSESSMENTS_BETA.md).
+
 ---
 
 ## Documentación
@@ -120,6 +132,7 @@ el proveedor y **degrada a mock** si faltan credenciales, de modo que la app sie
 | [MEDIA_CONTENT_MODEL](docs/MEDIA_CONTENT_MODEL.md) | Bloques de contenido y modelo de media. |
 | [ASSESSMENT_ENGINE](docs/ASSESSMENT_ENGINE.md) | Motor de evaluaciones *schema-driven*. |
 | [ASSESSMENT_TELEMETRY_AND_PRIVACY](docs/ASSESSMENT_TELEMETRY_AND_PRIVACY.md) | Telemetría de integridad y privacidad. |
+| [PUBLIC_ASSESSMENTS_BETA](docs/PUBLIC_ASSESSMENTS_BETA.md) | Módulo temporal público de evaluaciones (sin login). |
 | [BACKEND_INTEGRATION_PLAN](docs/BACKEND_INTEGRATION_PLAN.md) | Cómo conectar Supabase, Apps Script y R2. |
 | [FUTURE_HRIS_EVOLUTION](docs/FUTURE_HRIS_EVOLUTION.md) | Evolución hacia el HRIS/HCM sin monolito. |
 | [TESTING](docs/TESTING.md) | Estrategia de pruebas y verificación de accesibilidad. |

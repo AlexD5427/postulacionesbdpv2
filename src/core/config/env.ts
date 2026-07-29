@@ -38,6 +38,15 @@ const publicEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().default(''),
   NEXT_PUBLIC_APPS_SCRIPT_PUBLIC_READ_URL: z.string().url().or(z.literal('')).default(''),
   NEXT_PUBLIC_ARCHIVE_API_URL: z.string().url().or(z.literal('')).default(''),
+  /**
+   * Absolute URL of the **Evaluations** Apps Script Web App (`…/exec`).
+   *
+   * Public by design: it carries no secret and only serves the four sanitised
+   * public actions. It is NOT the same deployment as
+   * `NEXT_PUBLIC_APPS_SCRIPT_PUBLIC_READ_URL` (jobs) and it must never point at
+   * an administrative route. See docs/PUBLIC_ASSESSMENTS_BETA.md.
+   */
+  NEXT_PUBLIC_EVALUATIONS_APPS_SCRIPT_URL: z.string().url().or(z.literal('')).default(''),
 });
 
 /**
@@ -62,6 +71,7 @@ const rawPublicEnv = {
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   NEXT_PUBLIC_APPS_SCRIPT_PUBLIC_READ_URL: process.env.NEXT_PUBLIC_APPS_SCRIPT_PUBLIC_READ_URL,
   NEXT_PUBLIC_ARCHIVE_API_URL: process.env.NEXT_PUBLIC_ARCHIVE_API_URL,
+  NEXT_PUBLIC_EVALUATIONS_APPS_SCRIPT_URL: process.env.NEXT_PUBLIC_EVALUATIONS_APPS_SCRIPT_URL,
 };
 
 /**

@@ -38,8 +38,24 @@ function contentSecurityPolicy() {
     'img-src': ["'self'", 'data:', 'blob:', 'https://images.unsplash.com', 'https://*.supabase.co', 'https://*.r2.dev'],
     'media-src': ["'self'", 'blob:', 'https://*.supabase.co', 'https://*.r2.dev'],
     'font-src': ["'self'", 'data:'],
-    // Backend origins (Supabase / Apps Script proxy) are added at integration time.
-    'connect-src': ["'self'", ...(isDev ? ['ws:', 'wss:'] : []), 'https://*.supabase.co'],
+    /**
+     * Backend origins the browser may call.
+     *
+     * `script.google.com` is the Apps Script Web App used by the public
+     * assessment module (`NEXT_PUBLIC_EVALUATIONS_APPS_SCRIPT_URL`), and
+     * `script.googleusercontent.com` is where every `/exec` call is redirected:
+     * CSP is enforced on the redirect target too, so BOTH origins are required.
+     * Omitting the second one produces a blocked request that looks exactly like
+     * a network outage. Only these two Google origins are allowed — no wildcard
+     * over `*.google.com`. See docs/PUBLIC_ASSESSMENTS_BETA.md §CSP.
+     */
+    'connect-src': [
+      "'self'",
+      ...(isDev ? ['ws:', 'wss:'] : []),
+      'https://*.supabase.co',
+      'https://script.google.com',
+      'https://script.googleusercontent.com',
+    ],
     'frame-src': ["'self'"],
     'worker-src': ["'self'", 'blob:'],
     'manifest-src': ["'self'"],

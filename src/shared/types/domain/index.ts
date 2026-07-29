@@ -11,6 +11,7 @@ export * from './media';
 export * from './jobs';
 export * from './applications';
 export * from './assessments';
+export * from './public-assessments';
 export * from './telemetry';
 export * from './notifications';
 export * from './accessibility';
