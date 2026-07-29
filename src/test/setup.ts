@@ -22,6 +22,18 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
   }));
 }
 
+// jsdom lacks ResizeObserver, which Radix primitives (checkbox, radio, select)
+// use to size their indicators.
+if (typeof window !== 'undefined' && !('ResizeObserver' in window)) {
+  class MockResizeObserver {
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+  }
+  // @ts-expect-error assigning test double
+  window.ResizeObserver = MockResizeObserver;
+}
+
 // jsdom lacks IntersectionObserver, used by scroll-reveal / lazy media.
 if (typeof window !== 'undefined' && !('IntersectionObserver' in window)) {
   class MockIntersectionObserver {

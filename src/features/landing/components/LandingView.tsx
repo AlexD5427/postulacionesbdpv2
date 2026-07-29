@@ -178,6 +178,46 @@ export function LandingView({ featured }: { featured: JobSummary[] }) {
         </div>
       </section>
 
+      {/* ---------- DIRECT ACCESS: PUBLIC ASSESSMENT (BETA) ---------- */}
+      {/*
+        Quick access for candidates who received an assessment code. It uses the
+        same glass-card language as the offer showcase below, but stands alone
+        right after the hero because it is the only task on this page a visitor
+        may need to complete *without* an account.
+      */}
+      <section className="container-page" aria-labelledby="eval-access-heading">
+        <Reveal>
+          <GlassSurface
+            variant="elevated"
+            radius="3xl"
+            padding="lg"
+            className="glass-sheen flex flex-col items-start gap-5 md:flex-row md:items-center md:justify-between"
+          >
+            <div className="flex items-start gap-4">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
+                <ClipboardCheck className="h-6 w-6" aria-hidden />
+              </span>
+              <div className="flex flex-col gap-2">
+                <Badge tone="primary" className="w-fit">
+                  {t('home.eval.badge')}
+                </Badge>
+                <h2 id="eval-access-heading" className="text-2xl font-bold">
+                  {t('home.eval.title')}
+                </h2>
+                <p className="max-w-xl text-muted-foreground">{t('home.eval.body')}</p>
+                <p className="text-xs text-muted-foreground">{t('home.eval.note')}</p>
+              </div>
+            </div>
+            <Button asChild size="lg" className="w-full shrink-0 md:w-auto">
+              <Link href="/evaluaciones">
+                {t('home.eval.cta')}
+                <ArrowRight className="h-5 w-5" aria-hidden />
+              </Link>
+            </Button>
+          </GlassSurface>
+        </Reveal>
+      </section>
+
       {/* ---------- OFFER SHOWCASE ---------- */}
       <section className="container-page flex flex-col gap-8">
         <Reveal className="flex flex-col gap-2 text-center">

@@ -32,6 +32,7 @@ export const es = {
   'nav.jobs': 'Convocatorias',
   'nav.help': 'Ayuda',
   'nav.accessibility': 'Accesibilidad',
+  'nav.assessments': 'Evaluaciones',
   'nav.login': 'Ingresar',
   'nav.register': 'Crear cuenta',
   'nav.home': 'Inicio',
@@ -57,6 +58,7 @@ export const es = {
   'dock.jobs': 'Convocatorias',
   'dock.help': 'Ayuda',
   'dock.accessibility': 'Accesibilidad',
+  'dock.assessments': 'Rendir evaluación',
   'dock.search': 'Buscar (⌘K)',
   'dock.account': 'Mi espacio',
   'dock.label': 'Accesos rápidos',
@@ -107,6 +109,14 @@ export const es = {
   'home.offer.jobs.body': 'Explora oportunidades que se actualizan en tiempo real.',
   'home.offer.assessments.title': 'Evaluaciones justas',
   'home.offer.assessments.body': 'Demuestra tu talento con evaluaciones claras y accesibles.',
+
+  // --- Landing: direct access to the public assessment module (beta) -------
+  'home.eval.badge': 'Acceso directo',
+  'home.eval.title': '¿Recibiste un código de evaluación?',
+  'home.eval.body':
+    'Ingresa con tu nombre y tu Carnet de Identidad para rendir la evaluación que te compartió el equipo de Talento Humano. No necesitas crear una cuenta.',
+  'home.eval.cta': 'Rendir mi evaluación',
+  'home.eval.note': 'Sin registro · Funciona en el celular · Accesible con teclado',
 
   // --- Landing: how to apply ----------------------------------------------
   'home.how.title': 'Cómo postular',

@@ -10,7 +10,11 @@ Definidas de forma central en `src/core/security/headers.mjs` y aplicadas en `ne
 - **Content-Security-Policy** con `default-src 'self'`, `object-src 'none'`, `base-uri 'self'`,
   `form-action 'self'`, `frame-ancestors 'none'`, `upgrade-insecure-requests`. `img-src`/`media-src`
   listan explícitamente los orígenes permitidos (Unsplash de ejemplo, `*.supabase.co`, `*.r2.dev`) —
-  cada origen está documentado. `'unsafe-eval'` de scripts solo se habilita en **desarrollo** (React
+  cada origen está documentado. `connect-src` añade **dos** orígenes de Google para el módulo público
+  de evaluaciones: `https://script.google.com` (el `/exec` al que se llama) y
+  `https://script.googleusercontent.com` (el destino del `302` que Google devuelve, porque la CSP se
+  aplica también al destino de la redirección). Sin comodines `*.google.com`; ver
+  [`PUBLIC_ASSESSMENTS_BETA.md`](PUBLIC_ASSESSMENTS_BETA.md) §CSP. `'unsafe-eval'` de scripts solo se habilita en **desarrollo** (React
   Fast Refresh). Los estilos usan `'unsafe-inline'` por la inyección en runtime de Tailwind/Next.
 - **Referrer-Policy** `strict-origin-when-cross-origin`, **X-Content-Type-Options** `nosniff`,
   **X-Frame-Options** `DENY`.
@@ -33,6 +37,15 @@ Definidas de forma central en `src/core/security/headers.mjs` y aplicadas en `ne
 - Contrato preparado para validación de archivos en servidor (tipo/tamaño), normalización de nombres
   y estado de escaneo de malware; los tipos ejecutables se rechazarán. No se confía en el MIME del
   navegador.
+
+## Módulo público de evaluaciones (beta)
+
+La ruta `/evaluaciones` es pública por diseño: sin sesión, sin cookies y sin correo. Sus controles
+propios están documentados en [`PUBLIC_ASSESSMENTS_BETA.md`](PUBLIC_ASSESSMENTS_BETA.md) §8 y
+verificados en `src/features/public-assessments/security.test.ts`. En resumen: las claves de
+respuesta se borran del DTO antes de validarlo, el tipo de respuesta no admite campos de
+calificación, el nombre y el documento solo viajan a las dos escrituras del backend de evaluaciones,
+y no hay proctoring de ninguna clase.
 
 ## Límite de autenticación
 

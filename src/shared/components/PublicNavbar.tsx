@@ -15,6 +15,8 @@ import { cn } from '@/shared/lib/cn';
 
 const NAV_LINKS: Array<{ href: string; labelKey: TranslationKey }> = [
   { href: '/jobs', labelKey: 'nav.jobs' },
+  // Public, login-free assessment module (temporary beta).
+  { href: '/evaluaciones', labelKey: 'nav.assessments' },
   { href: '/help', labelKey: 'nav.help' },
   { href: '/accessibility', labelKey: 'nav.accessibility' },
 ];

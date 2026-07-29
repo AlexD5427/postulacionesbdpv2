@@ -5,7 +5,17 @@ import AxeBuilder from '@axe-core/playwright';
  * Automated accessibility checks (axe-core). These complement — never replace —
  * the manual checks documented in ACCESSIBILITY.md.
  */
-const PAGES = ['/', '/jobs', '/jobs/BDP-CRE-001', '/accessibility', '/login', '/register'];
+const PAGES = [
+  '/',
+  '/jobs',
+  '/jobs/BDP-CRE-001',
+  '/accessibility',
+  '/login',
+  '/register',
+  // Public assessment module (beta): the entry form is the only screen a
+  // candidate can reach without an account, so it is checked here too.
+  '/evaluaciones',
+];
 
 for (const path of PAGES) {
   test(`sin violaciones de accesibilidad serias en ${path}`, async ({ page }) => {
