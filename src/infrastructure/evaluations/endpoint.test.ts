@@ -18,10 +18,31 @@ describe('classifyEvaluationsEndpoint', () => {
     expect(result.url).toBe('https://script.google.com/macros/s/AKfycbxxxx/exec');
   });
 
-  it('accepts a /dev test deployment', () => {
-    expect(classifyEvaluationsEndpoint('https://script.google.com/macros/s/AK/dev').status).toBe(
-      'ready',
-    );
+  it('accepts a /dev test deployment outside production', () => {
+    expect(
+      classifyEvaluationsEndpoint('https://script.google.com/macros/s/AK/dev', {
+        production: false,
+      }).status,
+    ).toBe('ready');
+  });
+
+  it('rejects a /dev deployment in production', () => {
+    // `/dev` serves unpublished code and demands a Google session, so a
+    // candidate would receive Google's sign-in HTML instead of JSON.
+    const result = classifyEvaluationsEndpoint('https://script.google.com/macros/s/AK/dev', {
+      production: true,
+    });
+    expect(result.status).toBe('invalid');
+    expect(result.url).toBe('');
+    expect(result.diagnostic).toContain('/exec');
+  });
+
+  it('still accepts /exec in production', () => {
+    expect(
+      classifyEvaluationsEndpoint('https://script.google.com/macros/s/AK/exec', {
+        production: true,
+      }).status,
+    ).toBe('ready');
   });
 
   it('reports a missing variable by name', () => {
