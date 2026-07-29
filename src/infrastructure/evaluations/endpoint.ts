@@ -1,4 +1,4 @@
-import { env } from '@/core/config/env';
+import { env, isProduction } from '@/core/config/env';
 
 /**
  * Resolution of the public Evaluations endpoint.
@@ -33,7 +33,10 @@ const VARIABLE = 'NEXT_PUBLIC_EVALUATIONS_APPS_SCRIPT_URL';
  * Classify a raw value. Exported for tests so the rules are checkable without
  * mutating `process.env`.
  */
-export function classifyEvaluationsEndpoint(raw: string | undefined): EvaluationsEndpoint {
+export function classifyEvaluationsEndpoint(
+  raw: string | undefined,
+  { production = isProduction }: { production?: boolean } = {},
+): EvaluationsEndpoint {
   const value = (raw ?? '').trim();
   if (!value) {
     return {
@@ -77,6 +80,18 @@ export function classifyEvaluationsEndpoint(raw: string | undefined): Evaluation
       status: 'invalid',
       url: '',
       diagnostic: `${VARIABLE} debe terminar en /exec (o /dev para un despliegue de prueba). Copia la dirección del despliegue del Web App de Evaluaciones, no la del editor de Apps Script.`,
+    };
+  }
+
+  // A `/dev` deployment serves the code currently saved in the editor and only
+  // answers to accounts that can edit the script, so candidates would get an
+  // HTML sign-in page instead of JSON. It is useful while testing and wrong in
+  // production, where the mistake is invisible until a real candidate hits it.
+  if (production && parsed.pathname.endsWith('/dev')) {
+    return {
+      status: 'invalid',
+      url: '',
+      diagnostic: `${VARIABLE} apunta a un despliegue /dev, que exige sesión de Google y sirve el código sin publicar. En producción debe terminar en /exec.`,
     };
   }
 
