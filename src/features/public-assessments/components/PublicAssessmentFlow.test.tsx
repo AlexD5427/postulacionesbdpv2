@@ -598,3 +598,65 @@ describe('sin código en el enlace', () => {
     await waitFor(() => expect(abrirEvaluacion).toHaveBeenCalledWith('EV-RIES-4F2A'));
   });
 });
+
+/* ========================================================================== */
+
+describe('campos adicionales del participante', () => {
+  /**
+   * `nombre`, `documento` y `proceso` los cubre el número identificador. El resto
+   * —correo, teléfono, cargo, observaciones— es configurable por evaluación, y si el
+   * autor marca alguno como obligatorio, `evParticipantData_` **rechaza el inicio**.
+   * Sin pedirlos, esa evaluación sería imposible de empezar y el candidato vería un
+   * error que no puede resolver.
+   */
+  it('pide los campos que el autor activó y los envía en el participante', async () => {
+    const usuario = userEvent.setup();
+    abrirEvaluacion.mockResolvedValue({
+      ...PORTADA,
+      participante: {
+        campos: [
+          { clave: 'nombre', etiqueta: 'Nombre completo', obligatorio: true, activo: true },
+          { clave: 'documento', etiqueta: 'Documento', obligatorio: true, activo: true },
+          { clave: 'correo', etiqueta: 'Correo electrónico', obligatorio: true, activo: true },
+          { clave: 'cargo', etiqueta: 'Cargo al que postula', obligatorio: false, activo: true },
+        ],
+        requiereConsentimiento: false,
+        textoConsentimiento: '',
+      },
+    });
+
+    render(<PublicAssessmentFlow codigoInicial="EV-RIES-4F2A" />);
+    await identificarse(usuario);
+    await screen.findByRole('heading', { name: PRUEBA.titulo });
+
+    // El obligatorio bloquea el arranque.
+    await usuario.click(screen.getByRole('checkbox', { name: /he leído/i }));
+    const comenzar = screen.getByRole('button', { name: /comenzar la evaluación/i });
+    expect(comenzar).toBeDisabled();
+
+    // Y valida el formato del correo antes de gastar un viaje al servidor.
+    await usuario.type(screen.getByLabelText(/correo electrónico/i), 'no-es-correo');
+    await usuario.tab();
+    expect(await screen.findByText(/correo electrónico válido/i)).toBeInTheDocument();
+
+    await usuario.clear(screen.getByLabelText(/correo electrónico/i));
+    await usuario.type(screen.getByLabelText(/correo electrónico/i), 'ana@example.com');
+    await usuario.type(screen.getByLabelText(/cargo al que postula/i), 'Analista de Crédito');
+    await usuario.click(screen.getByRole('button', { name: /comenzar la evaluación/i }));
+
+    await waitFor(() => expect(iniciarIntento).toHaveBeenCalledTimes(1));
+    const [, participante] = iniciarIntento.mock.calls[0] as [string, Record<string, unknown>];
+    expect(participante.extra).toEqual({
+      correo: 'ana@example.com',
+      cargo: 'Analista de Crédito',
+    });
+  });
+
+  it('no pide nada cuando la evaluación solo usa nombre y documento', async () => {
+    const usuario = userEvent.setup();
+    render(<PublicAssessmentFlow codigoInicial="EV-RIES-4F2A" />);
+    await identificarse(usuario);
+    await screen.findByRole('heading', { name: PRUEBA.titulo });
+    expect(screen.queryByText(/datos que pide esta evaluación/i)).not.toBeInTheDocument();
+  });
+});

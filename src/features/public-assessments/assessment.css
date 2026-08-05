@@ -113,6 +113,24 @@
   --ev-accent-ink: 252 211 77;
 }
 
+/**
+ * Texto secundario, un pelo más oscuro que el del portal.
+ *
+ * `--color-muted-foreground` en tema claro es `slate-600`, que sobre el fondo de página
+ * da **4,49:1**. La norma pide 4,5:1 en texto pequeño, así que el token se queda a una
+ * centésima — y este módulo lo usa mucho a 12 px: etiquetas de escala, ayudas,
+ * contadores de caracteres. Dentro del módulo se baja a `slate-700`, que da holgura sin
+ * cambiar nada del resto del portal.
+ *
+ * En tema oscuro el token ya tiene margen sobrado, así que se deja como está.
+ */
+.ev-root {
+  --color-muted-foreground: var(--p-slate-700);
+}
+[data-theme='dark'] .ev-root {
+  --color-muted-foreground: var(--p-slate-300);
+}
+
 /* Densidad compacta: el autor puede pedir una prueba más apretada. */
 .ev-root[data-densidad='compacta'] {
   --ev-gap: 0.75rem;

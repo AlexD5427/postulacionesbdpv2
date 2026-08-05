@@ -15,7 +15,7 @@
  * definió en el ATS —su texto literal, nunca uno inventado aquí—.
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   CalendarClock,
@@ -30,7 +30,9 @@ import {
 } from 'lucide-react';
 import { Button } from '@/design-system/primitives/Button';
 import { Checkbox } from '@/design-system/primitives/Checkbox';
+import { Field } from '@/design-system/primitives/Field';
 import { GlassSurface } from '@/design-system/primitives/GlassSurface';
+import { Input, Textarea } from '@/design-system/primitives/Input';
 import { Alert } from '@/shared/components/Alert';
 import { useReducedMotion } from '@/features/accessibility/hooks/use-reduced-motion';
 import type { PortadaPublica } from '../domain/contract';
@@ -46,7 +48,7 @@ interface Props {
   iniciando: boolean;
   error?: { mensaje: string; pista?: string } | null;
   demostracion: boolean;
-  onComenzar: (consentimiento: boolean) => void;
+  onComenzar: (consentimiento: boolean, extra: Record<string, string>) => void;
   onVolver: () => void;
   onReintentar: () => void;
 }
@@ -77,6 +79,45 @@ export function BriefingScreen({
   const reducido = useReducedMotion();
   const [consentimiento, setConsentimiento] = useState(false);
   const [leido, setLeido] = useState(false);
+  const [extra, setExtra] = useState<Record<string, string>>({});
+  const [tocado, setTocado] = useState(false);
+
+  /**
+   * Campos adicionales que el autor activó en el ATS.
+   *
+   * `nombre` y `documento` ya se piden en la pantalla de acceso (salen del número
+   * identificador), y `proceso` se rellena con el número completo. El resto —correo,
+   * teléfono, cargo, observaciones— es configurable por evaluación, y si el autor marca
+   * alguno como obligatorio, `evParticipantData_` **rechaza el inicio** con un
+   * `VALIDATION_ERROR` que nombra el campo. Sin pedirlos aquí, esa evaluación sería
+   * imposible de empezar y el candidato vería un error que no puede resolver.
+   */
+  const camposExtra = useMemo(
+    () =>
+      (portada.participante?.campos ?? []).filter(
+        (campo) =>
+          campo.activo !== false && !['nombre', 'documento', 'proceso'].includes(campo.clave),
+      ),
+    [portada.participante?.campos],
+  );
+
+  const problemaDeCampo = (clave: string, obligatorio: boolean): string | undefined => {
+    if (!tocado) return undefined;
+    const valor = (extra[clave] ?? '').trim();
+    if (obligatorio && !valor) return 'Este dato es obligatorio.';
+    // Se valida el correo aquí porque el servidor lo valida igual, y avisar antes evita
+    // un viaje de ida y vuelta con un error genérico.
+    if (clave === 'correo' && valor && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(valor)) {
+      return 'Escribe un correo electrónico válido.';
+    }
+    return undefined;
+  };
+
+  const faltanCamposExtra = camposExtra.some(
+    (campo) =>
+      (campo.obligatorio && !(extra[campo.clave] ?? '').trim()) ||
+      problemaDeCampo(campo.clave, campo.obligatorio) !== undefined,
+  );
 
   /* ------------------------- Evaluación no disponible -------------------- */
 
@@ -123,7 +164,8 @@ export function BriefingScreen({
 
   const exigeConsentimiento = portada.participante?.requiereConsentimiento === true;
   const textoConsentimiento = portada.participante?.textoConsentimiento ?? '';
-  const puedeEmpezar = leido && (!exigeConsentimiento || consentimiento) && !iniciando;
+  const puedeEmpezar =
+    leido && (!exigeConsentimiento || consentimiento) && !faltanCamposExtra && !iniciando;
   const intentos = portada.intentosMaximos ?? 1;
 
   return (
@@ -211,6 +253,60 @@ export function BriefingScreen({
             </button>
           </section>
 
+          {camposExtra.length > 0 && (
+            <section className="flex flex-col gap-4">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Datos que pide esta evaluación
+              </h2>
+              {camposExtra.map((campo) => (
+                <Field
+                  key={campo.clave}
+                  label={campo.etiqueta || campo.clave}
+                  required={campo.obligatorio}
+                  error={problemaDeCampo(campo.clave, campo.obligatorio)}
+                >
+                  {(props) =>
+                    campo.clave === 'observaciones' ? (
+                      <Textarea
+                        {...props}
+                        rows={3}
+                        value={extra[campo.clave] ?? ''}
+                        disabled={iniciando}
+                        onChange={(evento) =>
+                          setExtra((previo) => ({ ...previo, [campo.clave]: evento.target.value }))
+                        }
+                      />
+                    ) : (
+                      <Input
+                        {...props}
+                        type={
+                          campo.clave === 'correo'
+                            ? 'email'
+                            : campo.clave === 'telefono'
+                              ? 'tel'
+                              : 'text'
+                        }
+                        autoComplete={
+                          campo.clave === 'correo'
+                            ? 'email'
+                            : campo.clave === 'telefono'
+                              ? 'tel'
+                              : 'off'
+                        }
+                        value={extra[campo.clave] ?? ''}
+                        disabled={iniciando}
+                        onBlur={() => setTocado(true)}
+                        onChange={(evento) =>
+                          setExtra((previo) => ({ ...previo, [campo.clave]: evento.target.value }))
+                        }
+                      />
+                    )
+                  }
+                </Field>
+              ))}
+            </section>
+          )}
+
           {!docRicoVacioP(portada.instrucciones) && (
             <section className="flex flex-col gap-2">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -279,7 +375,18 @@ export function BriefingScreen({
               size="lg"
               loading={iniciando}
               disabled={!puedeEmpezar}
-              onClick={() => onComenzar(consentimiento)}
+              onClick={() => {
+                setTocado(true);
+                if (faltanCamposExtra) return;
+                // Sólo viajan los campos con algo escrito: mandar cadenas vacías
+                // llenaría `participante_json` de claves sin valor.
+                const limpios = Object.fromEntries(
+                  Object.entries(extra)
+                    .map(([clave, valor]) => [clave, valor.trim()])
+                    .filter(([, valor]) => valor !== ''),
+                ) as Record<string, string>;
+                onComenzar(consentimiento, limpios);
+              }}
             >
               <Play className="h-5 w-5" aria-hidden />
               Comenzar la evaluación

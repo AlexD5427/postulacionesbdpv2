@@ -464,6 +464,25 @@ test.describe('accesibilidad', () => {
    * del flujo.
    */
   const auditar = async (page: Page, etapa: string) => {
+    /*
+     * Se audita el estado **asentado**, con movimiento reducido emulado.
+     *
+     * Las tarjetas de pregunta entran entre `opacity: 0` y `1`. Sin esto, axe puede
+     * medir el contraste de un fotograma intermedio —con la tarjeta a media
+     * transparencia— y reportar un incumplimiento que no existe en ningún estado
+     * estable. Se vio como un fallo intermitente que sólo aparecía en el proyecto móvil,
+     * porque el dispositivo emulado es más lento y la animación seguía en marcha.
+     *
+     * Auditar con movimiento reducido no rebaja la exigencia: es el modo en que el
+     * módulo se pinta de una vez, y el contraste de un fotograma de transición no es un
+     * requisito de la norma.
+     */
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    // Margen suficiente para que termine la entrada escalonada: hasta 0,28 s de retraso
+    // más 0,3 s de transición. Emular movimiento reducido no cancela una animación que ya
+    // está en marcha, así que hay que esperarla.
+    await page.waitForTimeout(900);
+
     const resultado = await new AxeBuilder({ page })
       // Se audita el módulo, no el portal completo. La barra pública, el dock y el botón
       // del centro de accesibilidad ya los audita `e2e/accessibility.spec.ts`, y tienen
@@ -477,6 +496,8 @@ test.describe('accesibilidad', () => {
     const graves = resultado.violations.filter(
       (violacion) => violacion.impact === 'serious' || violacion.impact === 'critical',
     );
+    await page.emulateMedia({ reducedMotion: null });
+
     expect(
       graves,
       `${etapa}: ${JSON.stringify(

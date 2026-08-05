@@ -128,7 +128,11 @@ export function PublicAssessmentFlow({ codigoInicial }: Props) {
   }, []);
 
   const comenzar = useCallback(
-    async (consentimiento: boolean, reintentoLimpio = false) => {
+    async (
+      consentimiento: boolean,
+      extra: Record<string, string>,
+      reintentoLimpio = false,
+    ) => {
       if (!acceso || !portada) return;
       setCargando(true);
       setErrorInicio(null);
@@ -141,6 +145,7 @@ export function PublicAssessmentFlow({ codigoInicial }: Props) {
             nombre: acceso.nombre,
             documento: acceso.numero.carnet,
             numeroIdentificador: acceso.numero.completo,
+            extra,
           },
           {
             consentimiento,
@@ -160,7 +165,7 @@ export function PublicAssessmentFlow({ codigoInicial }: Props) {
           // Segundo clic o reintento tras un corte: el intento ya existe. Con un
           // identificador nuevo, el backend lo retoma en lugar de duplicarlo.
           setCargando(false);
-          void comenzar(consentimiento, true);
+          void comenzar(consentimiento, extra, true);
           return;
         }
         setErrorInicio({ mensaje: mensajeParaCandidato(error), pista: pistaParaCandidato(error) });
@@ -238,7 +243,7 @@ export function PublicAssessmentFlow({ codigoInicial }: Props) {
           iniciando={cargando}
           error={errorInicio}
           demostracion={demostracion}
-          onComenzar={(consentimiento) => void comenzar(consentimiento)}
+          onComenzar={(consentimiento, extra) => void comenzar(consentimiento, extra)}
           onVolver={volverAlAcceso}
           onReintentar={() => void abrir(acceso)}
         />
