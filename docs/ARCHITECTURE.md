@@ -56,11 +56,23 @@ Componente (client) ──► hook TanStack Query ──► getDataProvider() �
 
 ## Módulo temporal: evaluaciones públicas
 
-`src/features/public-assessments` + `src/infrastructure/evaluations` implementan la beta pública sin
-login (`/evaluaciones`). Sigue las mismas reglas que el resto (puerto en `core/data`, adaptadores en
-`infrastructure`, componentes que solo consumen *hooks*), pero **no** entra en el agregado
-`DataProvider`: su puerto es independiente para poder retirarse en un solo commit sin tocar los demás
-proveedores. Ver [`PUBLIC_ASSESSMENTS_BETA.md`](PUBLIC_ASSESSMENTS_BETA.md).
+`src/features/public-assessments` contiene **todo** el módulo público sin login (`/evaluaciones`):
+dominio, capa de red, hooks, estado, componentes y su propia hoja de estilos. A diferencia del resto
+del portal **no** pasa por `DataProvider` ni declara un puerto en `core/data`, y eso es deliberado: el
+módulo es temporal y desechable, y un puerto compartido obligaría a tocar el agregado de proveedores
+el día que se retire.
+
+La capa está separada igual que en el resto de la aplicación, sólo que hacia dentro:
+
+| Capa | Directorio | Regla |
+| --- | --- | --- |
+| Dominio | `domain/` | Sin red y sin React. Se prueba sin montar un DOM. |
+| Frontera | `api/` | Único sitio con `fetch`. Ningún componente lo llama. |
+| Interfaz | `components/`, `hooks/`, `state/` | Consumen `api/client.ts` y nada más. |
+
+Nada fuera del directorio lo importa salvo la ruta `app/(public)/evaluaciones`, y
+`security.test.ts` lo verifica recorriendo `src/`. Ver
+[`PUBLIC_ASSESSMENTS.md`](PUBLIC_ASSESSMENTS.md) §1 para el procedimiento de retirada.
 
 ## Límites entre *features*
 

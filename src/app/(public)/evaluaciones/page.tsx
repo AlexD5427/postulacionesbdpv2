@@ -1,19 +1,26 @@
 import type { Metadata } from 'next';
 import { PublicAssessmentFlow } from '@/features/public-assessments/components/PublicAssessmentFlow';
+import '@/features/public-assessments/assessment.css';
 
 /**
- * Public assessment route — **temporary beta module**.
+ * Ruta pública de evaluaciones — **módulo temporal, sin inicio de sesión**.
  *
- * No auth guard, no session, no cookie: a candidate arrives with a link
- * (`/evaluaciones?code=EVL-XXXX-YYYY`) or types the code here. The page itself is
- * a thin Server Component: it only reads the code from the query string and
- * hands it to the client flow, so the route stays statically renderable and the
- * authenticated assessment engine under `(candidate)` is untouched.
+ * Sin guard de sesión, sin cookie, sin correo: un candidato llega con el enlace de
+ * su invitación (`/evaluaciones?codigo=EV-XXXX-1234`) y se identifica con su número
+ * identificador. La página es un Server Component mínimo —lee el código de la
+ * cadena de consulta y lo entrega al flujo— para que la ruta siga siendo estática y
+ * el motor autenticado de `(candidate)/candidate/assessments` quede intacto.
+ *
+ * `robots: noindex` porque una evaluación se distribuye por enlace directo y no
+ * tiene ningún sentido en un buscador.
+ *
+ * Cómo retirar el módulo cuando llegue el acceso con Google: ver
+ * `src/features/public-assessments/README.md`.
  */
 export const metadata: Metadata = {
   title: 'Rendir una evaluación',
   description:
-    'Ingresa el código de tu evaluación y tus datos para responderla. No necesitas crear una cuenta.',
+    'Identifícate con tu número identificador para rendir la evaluación de tu proceso de selección. No necesitas crear una cuenta.',
   robots: { index: false, follow: false },
 };
 
@@ -21,19 +28,25 @@ interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-function firstValue(value: string | string[] | undefined): string | undefined {
-  if (Array.isArray(value)) return value[0];
-  return value;
+function primerValor(valor: string | string[] | undefined): string | undefined {
+  return Array.isArray(valor) ? valor[0] : valor;
 }
 
 export default async function PublicAssessmentsPage({ searchParams }: PageProps) {
-  const params = await searchParams;
-  // Accepts `?code=` and the shorter `?c=` used in some printed links.
-  const code = firstValue(params.code) ?? firstValue(params.c);
+  const parametros = await searchParams;
+  /**
+   * Tres nombres para el mismo parámetro.
+   *
+   * `codigo` es el que usa el ATS al generar el enlace público; `code` y `c` se
+   * aceptan porque enlaces impresos y correos antiguos los usan, y rechazarlos
+   * obligaría al candidato a teclear el código a mano por una letra.
+   */
+  const codigo =
+    primerValor(parametros.codigo) ?? primerValor(parametros.code) ?? primerValor(parametros.c);
 
   return (
     <div className="container-page py-10 md:py-16">
-      <PublicAssessmentFlow initialCode={code?.trim() || undefined} />
+      <PublicAssessmentFlow codigoInicial={codigo?.trim() || undefined} />
     </div>
   );
 }

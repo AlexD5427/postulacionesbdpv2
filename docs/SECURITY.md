@@ -14,7 +14,7 @@ Definidas de forma central en `src/core/security/headers.mjs` y aplicadas en `ne
   de evaluaciones: `https://script.google.com` (el `/exec` al que se llama) y
   `https://script.googleusercontent.com` (el destino del `302` que Google devuelve, porque la CSP se
   aplica también al destino de la redirección). Sin comodines `*.google.com`; ver
-  [`PUBLIC_ASSESSMENTS_BETA.md`](PUBLIC_ASSESSMENTS_BETA.md) §CSP. `'unsafe-eval'` de scripts solo se habilita en **desarrollo** (React
+  [`PUBLIC_ASSESSMENTS.md`](PUBLIC_ASSESSMENTS.md) §10. `'unsafe-eval'` de scripts solo se habilita en **desarrollo** (React
   Fast Refresh). Los estilos usan `'unsafe-inline'` por la inyección en runtime de Tailwind/Next.
 - **Referrer-Policy** `strict-origin-when-cross-origin`, **X-Content-Type-Options** `nosniff`,
   **X-Frame-Options** `DENY`.
@@ -38,14 +38,32 @@ Definidas de forma central en `src/core/security/headers.mjs` y aplicadas en `ne
   y estado de escaneo de malware; los tipos ejecutables se rechazarán. No se confía en el MIME del
   navegador.
 
-## Módulo público de evaluaciones (beta)
+## Módulo público de evaluaciones (temporal, sin login)
 
 La ruta `/evaluaciones` es pública por diseño: sin sesión, sin cookies y sin correo. Sus controles
-propios están documentados en [`PUBLIC_ASSESSMENTS_BETA.md`](PUBLIC_ASSESSMENTS_BETA.md) §8 y
-verificados en `src/features/public-assessments/security.test.ts`. En resumen: las claves de
-respuesta se borran del DTO antes de validarlo, el tipo de respuesta no admite campos de
-calificación, el nombre y el documento solo viajan a las dos escrituras del backend de evaluaciones,
-y no hay proctoring de ninguna clase.
+están documentados en [`PUBLIC_ASSESSMENTS.md`](PUBLIC_ASSESSMENTS.md) §10 y verificados en
+`src/features/public-assessments/security.test.ts`, que los comprueba **leyendo el código fuente**
+para que una regresión en un archivo nuevo falle igual que en uno viejo. En resumen:
+
+- **La clave de respuestas no llega al navegador.** `quitarClavesProhibidas()` borra `correcta`,
+  `claveEmparejamiento`, `respuestaEsperada`, `modoPuntaje`, `puntajeAprobacion` y quince más
+  **antes** de validar el DTO. Es la segunda defensa: la primera es la proyección con lista blanca
+  del servidor, y esta existe porque el portal no controla qué versión del script está desplegada.
+  Una fuga se registra con los **nombres** de las claves, nunca sus valores.
+- **El cliente no puede enviar una nota.** El tipo de respuesta no tiene campos de calificación.
+- **Sin superficie administrativa.** Las veintidós acciones administrativas del backend no se nombran
+  en ningún archivo del módulo y ninguna llamada lleva llave de administración.
+- **Datos personales.** El nombre y el carnet viven en estado de componente y viajan sólo en
+  `startAttempt`; no van a la URL, ni al almacenamiento del navegador, ni a un log. El campo del
+  documento lleva `autocomplete="off"` porque en un equipo compartido el autocompletado lo ofrecería
+  a la siguiente persona.
+- **El token del intento no se guarda.** Es una credencial; reanudar se hace volviendo a escribir el
+  número identificador y dejando que el backend retome el intento.
+- **Sin proctoring.** El rastro de integridad registra visibilidad de pestaña, foco, copiar/pegar
+  (**sólo la longitud**), tiempos y navegación, y se **declara antes de empezar**. Nada de cámara,
+  micrófono, pantalla, biometría ni huella del dispositivo; la política de permisos lo hace cierto a
+  nivel de navegador.
+- **Sin inyección de HTML.** Ni `dangerouslySetInnerHTML`, ni `innerHTML`, ni `eval`.
 
 ## Límite de autenticación
 

@@ -1,169 +1,239 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, within, act } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactElement } from 'react';
-import type { PublicAssessmentsRepository } from '@/core/data/public-assessments';
-import type { PublicAttemptSubmission } from '@/shared/types/domain';
-import { EvaluationsError } from '@/infrastructure/evaluations/contract';
-import { mapPublicAssessment } from '@/infrastructure/evaluations/mapper';
-import { PublicAssessmentFlow } from './PublicAssessmentFlow';
+import type {
+  ComprobanteIntento,
+  InicioIntento,
+  PortadaPublica,
+  PruebaPublica,
+} from '../domain/contract';
 
 /**
- * End-to-end behaviour of the public flow, with the repository injected.
+ * Recorrido completo del módulo, en un navegador simulado.
  *
- * The repository is a fake at the **port** level, not a `fetch` stub: that keeps
- * these tests about the flow (identity → preflight → answers → single
- * submission → receipt) while `transport.test.ts` owns the wire details.
+ * Se simula el **cliente** y no `fetch`, a propósito: el transporte ya tiene su propia
+ * suite (`api/transport.test.ts`) y mezclar las dos capas haría que un cambio en las
+ * cabeceras rompiera pruebas de interfaz. Aquí se comprueba el comportamiento que ve
+ * la persona: qué se pide, qué se muestra, qué se envía y qué no puede pasar dos veces.
  */
 
-vi.mock('@/infrastructure/evaluations/endpoint', () => ({
-  evaluationsEndpoint: () => ({ status: 'ready', url: 'https://script.google.com/x/exec', diagnostic: '' }),
-  isDemoMode: () => false,
+vi.mock('../api/endpoint', () => ({
+  endpointEvaluaciones: () => ({ estado: 'listo', url: 'https://x/exec', diagnostico: '' }),
+  esModoDemostracion: () => false,
 }));
 
-const ASSESSMENT_DTO = {
-  publicCode: 'EVL-TEST-0001',
-  title: 'Evaluación de prueba',
-  description: '',
-  instructions: 'Lee cada pregunta con calma.',
-  durationMinutes: 10,
-  versionLabel: 'v1.0',
-  assessmentVersion: 1,
-  questionCount: 3,
-  theme: { accent: 'cyan', density: 'comfortable', showProgressBar: true },
-  navigation: { mode: 'free', allowBack: true, showProgress: true },
-  consent: {
-    requireConsent: true,
-    consentText: 'Consiento el tratamiento de mis respuestas para este proceso.',
-    requireDataPrivacyAcceptance: true,
+const abrirEvaluacion = vi.fn();
+const iniciarIntento = vi.fn();
+const enviarIntento = vi.fn();
+const guardarProgreso = vi.fn();
+const latido = vi.fn();
+let contadorSolicitudes = 0;
+
+vi.mock('../api/client', async () => {
+  const real = await vi.importActual<typeof import('../api/client')>('../api/client');
+  return {
+    ...real,
+    abrirEvaluacion: (...args: unknown[]) => abrirEvaluacion(...args),
+    iniciarIntento: (...args: unknown[]) => iniciarIntento(...args),
+    enviarIntento: (...args: unknown[]) => enviarIntento(...args),
+    guardarProgreso: (...args: unknown[]) => guardarProgreso(...args),
+    latido: (...args: unknown[]) => latido(...args),
+    nuevaSolicitudId: () => {
+      contadorSolicitudes += 1;
+      return `req_${contadorSolicitudes}`;
+    },
+  };
+});
+
+import { ErrorEvaluaciones } from '../api/errors';
+import { PublicAssessmentFlow } from './PublicAssessmentFlow';
+
+/* ------------------------------ Datos de prueba --------------------------- */
+
+function texto(cadena: string) {
+  return { v: 1, b: [{ t: 'p' as const, s: [{ x: cadena }] }] };
+}
+
+const PRUEBA: PruebaPublica = {
+  codigo: 'EV-RIES-4F2A',
+  titulo: 'Evaluación de Riesgo Crediticio',
+  descripcion: 'Prueba de conocimientos.',
+  instrucciones: texto('Lee con atención.'),
+  versionEtiqueta: 'v1.0',
+  totalPreguntas: 3,
+  aplicacion: {
+    duracionMinutos: 30,
+    navegacion: 'libre',
+    permitirRetroceso: true,
+    mostrarProgreso: true,
+    autoenviarAlExpirar: true,
+    // 0 desactiva el autoguardado por temporizador: en una prueba con temporizadores
+    // reales, un intervalo suelto convierte los fallos en intermitentes.
+    guardadoAutomaticoSegundos: 0,
   },
-  sections: [
+  participante: {
+    campos: [
+      { clave: 'nombre', etiqueta: 'Nombre completo', obligatorio: true, activo: true },
+      { clave: 'documento', etiqueta: 'Documento', obligatorio: true, activo: true },
+    ],
+    requiereConsentimiento: true,
+    textoConsentimiento: 'Autorizo el tratamiento de mis respuestas.',
+    visibilidadResultado: 'solo_envio',
+  },
+  integridad: {
+    registrarCambioPestana: true,
+    registrarCopiaPegado: true,
+    registrarTiempos: false,
+    registrarNavegacion: true,
+    bloquearPegado: false,
+    bloquearMenuContextual: false,
+    // `false` para que `beforeunload` no interfiera con el desmontaje del test.
+    avisarAlSalir: false,
+    pantallaCompletaSugerida: false,
+    umbralRiesgo: 5,
+  },
+  tema: {
+    acento: 'esmeralda',
+    densidad: 'comoda',
+    portadaUrl: '',
+    logoUrl: '',
+    mostrarNumeracion: true,
+    animaciones: true,
+  },
+  secciones: [
     {
-      sectionId: 'sec_1',
-      title: 'Primera sección',
-      description: '',
-      position: 0,
-      timeLimitSeconds: null,
-      questions: [
+      id: 'sec_1',
+      titulo: 'Conocimientos',
+      descripcion: { v: 1, b: [] },
+      limiteSegundos: null,
+      preguntas: [
         {
-          questionId: 'qst_single',
-          questionType: 'q_single_choice',
-          position: 0,
-          questionText: '¿Qué indicador mide la capacidad de pago?',
-          description: '',
-          helpText: '',
-          required: true,
-          configuration: {},
-          media: null,
-          accessibility: { ariaLabel: '', longDescription: '' },
-          options: [
-            { optionId: 'opt_a', optionValue: 'a', optionText: 'Cuota sobre ingreso', mediaUrl: null },
-            { optionId: 'opt_b', optionValue: 'b', optionText: 'Antigüedad del domicilio', mediaUrl: null },
+          id: 'pr_unica',
+          tipo: 'opcion_unica',
+          enunciado: texto('¿En qué categoría se clasifica una mora de 45 días?'),
+          ayuda: { v: 1, b: [] },
+          obligatoria: true,
+          configuracion: {},
+          opciones: [
+            { id: 'op_a', valor: 'op_a', texto: texto('Categoría A') },
+            { id: 'op_b', valor: 'op_b', texto: texto('Categoría B') },
           ],
+          puntos: 10,
         },
         {
-          questionId: 'qst_text',
-          questionType: 'q_short_text',
-          position: 1,
-          questionText: 'Describe tu experiencia',
-          description: '',
-          helpText: '',
-          required: false,
-          configuration: { maxLength: 100 },
-          media: null,
-          accessibility: { ariaLabel: '', longDescription: '' },
-          options: [],
+          id: 'pr_texto',
+          tipo: 'texto_corto',
+          enunciado: texto('Define riesgo crediticio.'),
+          ayuda: { v: 1, b: [] },
+          obligatoria: true,
+          configuracion: {},
+          opciones: [],
         },
         {
-          questionId: 'qst_upload',
-          questionType: 'q_file_response',
-          position: 2,
-          questionText: 'Adjunta un informe',
-          description: '',
-          helpText: '',
-          required: true,
-          configuration: {},
-          media: null,
-          accessibility: { ariaLabel: '', longDescription: '' },
-          options: [],
+          id: 'pr_opcional',
+          tipo: 'texto_corto',
+          enunciado: texto('Comentarios adicionales.'),
+          ayuda: { v: 1, b: [] },
+          obligatoria: false,
+          configuracion: {},
+          opciones: [],
         },
       ],
     },
   ],
 };
 
-interface FakeRepo extends PublicAssessmentsRepository {
-  submissions: Array<{ requestId: string; submission: PublicAttemptSubmission }>;
-  startRequestIds: string[];
-}
+const PORTADA: PortadaPublica = {
+  codigo: 'EV-RIES-4F2A',
+  disponible: true,
+  motivo: '',
+  mensaje: '',
+  titulo: PRUEBA.titulo,
+  horaServidor: '2026-08-05T10:00:00Z',
+  descripcion: PRUEBA.descripcion,
+  instrucciones: PRUEBA.instrucciones,
+  versionEtiqueta: 'v1.0',
+  totalPreguntas: 3,
+  duracionMinutos: 30,
+  intentosMaximos: 1,
+  participante: {
+    campos: PRUEBA.participante.campos,
+    requiereConsentimiento: true,
+    textoConsentimiento: PRUEBA.participante.textoConsentimiento,
+  },
+  integridad: PRUEBA.integridad,
+  tema: PRUEBA.tema,
+  ventanaFin: '',
+};
 
-function createFakeRepo(options?: {
-  lookupError?: EvaluationsError;
-  failSubmitTimes?: number;
-  gradingStatus?: string;
-  score?: number | null;
-}): FakeRepo {
-  let remainingFailures = options?.failSubmitTimes ?? 0;
-  const repo: FakeRepo = {
-    live: true,
-    submissions: [],
-    startRequestIds: [],
-    async getAssessment() {
-      if (options?.lookupError) throw options.lookupError;
-      return mapPublicAssessment(ASSESSMENT_DTO);
-    },
-    async startAttempt(requestId) {
-      repo.startRequestIds.push(requestId);
-      return {
-        attemptId: 'att_test_1',
-        assessmentVersion: 1,
-        versionId: 'ver_1',
-        startedAt: new Date().toISOString(),
-      };
-    },
-    async submitAttempt(requestId, submission) {
-      if (remainingFailures > 0) {
-        remainingFailures -= 1;
-        throw new EvaluationsError('LOCK_TIMEOUT');
-      }
-      repo.submissions.push({ requestId, submission });
-      return {
-        attemptId: submission.attemptId,
-        status: 'submitted',
-        gradingStatus: options?.gradingStatus ?? 'pending_manual_review',
-        received: submission.answers.length,
-        ...(options?.score !== undefined ? { score: options.score, passed: null } : {}),
-        idempotentReplay: false,
-        receivedAt: new Date().toISOString(),
-      };
-    },
+function inicio(parcial: Partial<InicioIntento> = {}): InicioIntento {
+  return {
+    intentoId: 'in_abc123',
+    token: 'v1.token',
+    retomado: false,
+    horaServidor: '2026-08-05T10:00:00Z',
+    iniciadoEn: '2026-08-05T10:00:00Z',
+    limiteEn: '2026-08-05T10:30:00Z',
+    segundosRestantes: 1800,
+    respuestasPrevias: [],
+    prueba: PRUEBA,
+    ...parcial,
   };
-  return repo;
 }
 
-function renderFlow(ui: ReactElement) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  });
-  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+const COMPROBANTE: ComprobanteIntento = {
+  intentoId: 'in_abc123',
+  evaluacion: PRUEBA.titulo,
+  estado: 'enviado',
+  enviadoEn: '2026-08-05T10:12:00Z',
+  envioAutomatico: false,
+  repetido: false,
+  respuestasRegistradas: 2,
+  calificacionPendiente: true,
+  segundosUsados: 720,
+};
+
+/* --------------------------------- Ayudantes ------------------------------ */
+
+async function identificarse(usuario: ReturnType<typeof userEvent.setup>) {
+  await usuario.type(screen.getByLabelText(/número identificador/i), '1234567-12-2026');
+  await usuario.type(screen.getByLabelText(/nombre completo/i), 'Ana Quispe Mamani');
+  await usuario.click(screen.getByRole('checkbox'));
+  await usuario.click(screen.getByRole('button', { name: /continuar/i }));
 }
 
-async function identify(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(screen.getByLabelText(/nombre completo/i), 'Ana Pérez');
-  await user.type(screen.getByLabelText(/^Carnet de Identidad/), '1234567 LP');
-  await user.click(screen.getByRole('checkbox'));
-  await user.click(screen.getByRole('button', { name: /continuar/i }));
+async function entrarALaPrueba(usuario: ReturnType<typeof userEvent.setup>) {
+  await identificarse(usuario);
+  await screen.findByRole('heading', { name: PRUEBA.titulo });
+  const casillas = screen.getAllByRole('checkbox');
+  for (const casilla of casillas) await usuario.click(casilla);
+  await usuario.click(screen.getByRole('button', { name: /comenzar la evaluación/i }));
+  await waitFor(() => expect(screen.getByRole('button', { name: /enviar la evaluación/i })).toBeInTheDocument());
 }
 
-async function startAttempt(user: ReturnType<typeof userEvent.setup>) {
-  const checkboxes = screen.getAllByRole('checkbox');
-  for (const checkbox of checkboxes) await user.click(checkbox);
-  await user.click(screen.getByRole('button', { name: /comenzar evaluación/i }));
-  await screen.findByRole('heading', { name: /primera sección/i });
-}
+/* --------------------------------- Montaje -------------------------------- */
 
 beforeEach(() => {
+  contadorSolicitudes = 0;
+  abrirEvaluacion.mockReset().mockResolvedValue(PORTADA);
+  iniciarIntento.mockReset().mockResolvedValue(inicio());
+  enviarIntento.mockReset().mockResolvedValue(COMPROBANTE);
+  guardarProgreso.mockReset().mockResolvedValue({
+    guardadoEn: '2026-08-05T10:05:00Z',
+    respuestasGuardadas: 1,
+    horaServidor: '2026-08-05T10:05:00Z',
+    segundosRestantes: 1500,
+    expirado: false,
+  });
+  latido.mockReset().mockResolvedValue({
+    intentoId: 'in_abc123',
+    estado: 'en_curso',
+    horaServidor: '2026-08-05T10:05:00Z',
+    limiteEn: '2026-08-05T10:30:00Z',
+    segundosRestantes: 1500,
+    expirado: false,
+    ultimoGuardadoEn: '',
+  });
   window.sessionStorage.clear();
 });
 
@@ -171,239 +241,360 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe('PublicAssessmentFlow', () => {
-  it('takes a candidate from the link to the receipt without any login', async () => {
-    const user = userEvent.setup();
-    const repo = createFakeRepo();
-    renderFlow(<PublicAssessmentFlow initialCode="EVL-TEST-0001" repository={repo} />);
+/* ========================================================================== */
 
-    await identify(user);
+describe('recorrido completo sin inicio de sesión', () => {
+  it('lleva a un candidato del enlace al comprobante', async () => {
+    const usuario = userEvent.setup();
+    render(<PublicAssessmentFlow codigoInicial="EV-RIES-4F2A" />);
 
-    // Preflight shows what the candidate is about to do.
-    expect(await screen.findByRole('heading', { name: /evaluación de prueba/i })).toBeInTheDocument();
-    expect(screen.getByText(/lee cada pregunta con calma/i)).toBeInTheDocument();
-    // Consent is a real gate.
-    expect(screen.getByRole('button', { name: /comenzar evaluación/i })).toBeDisabled();
+    // 1 · Acceso: con el código en el enlace sólo se piden dos datos.
+    expect(screen.getByLabelText(/número identificador/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/código de la evaluación/i)).not.toBeInTheDocument();
 
-    await startAttempt(user);
-    expect(repo.startRequestIds).toHaveLength(1);
+    await identificarse(usuario);
+    expect(abrirEvaluacion).toHaveBeenCalledWith('EV-RIES-4F2A');
 
-    await user.click(screen.getByRole('radio', { name: /cuota sobre ingreso/i }));
-    await user.type(screen.getByLabelText(/describe tu experiencia/i), 'Cinco años en riesgos');
+    // 2 · Antesala: se confirma la identidad y se declara lo que se registra.
+    await screen.findByRole('heading', { name: PRUEBA.titulo });
+    expect(screen.getByText('1234567-12-2026')).toBeInTheDocument();
+    expect(screen.getByText(/qué se registra durante la evaluación/i)).toBeInTheDocument();
+    expect(screen.getByText(PRUEBA.participante.textoConsentimiento)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /revisar y enviar/i }));
-    const dialog = await screen.findByRole('dialog');
-    await user.click(within(dialog).getByRole('button', { name: /enviar respuestas/i }));
+    for (const casilla of screen.getAllByRole('checkbox')) await usuario.click(casilla);
+    await usuario.click(screen.getByRole('button', { name: /comenzar la evaluación/i }));
 
-    expect(
-      await screen.findByRole('heading', { name: /tus respuestas fueron recibidas correctamente/i }),
-    ).toBeInTheDocument();
+    // 3 · Prueba: el intento se crea con los datos correctos.
+    await waitFor(() => expect(iniciarIntento).toHaveBeenCalledTimes(1));
+    const [codigo, participante, extra] = iniciarIntento.mock.calls[0] as [
+      string,
+      Record<string, string>,
+      Record<string, unknown>,
+    ];
+    expect(codigo).toBe('EV-RIES-4F2A');
+    expect(participante).toMatchObject({
+      nombre: 'Ana Quispe Mamani',
+      documento: '1234567',
+      numeroIdentificador: '1234567-12-2026',
+    });
+    expect(extra.consentimiento).toBe(true);
 
-    expect(repo.submissions).toHaveLength(1);
-    const { submission } = repo.submissions[0]!;
-    expect(submission.publicCode).toBe('EVL-TEST-0001');
-    expect(submission.attemptId).toBe('att_test_1');
-    expect(submission.participant).toEqual({ name: 'Ana Pérez', document: '1234567 LP' });
-    expect(submission.durationSeconds).toBeGreaterThanOrEqual(0);
-    // The disabled `upload` type is never sent, even though it is "required".
-    expect(submission.answers).toEqual([
-      { questionId: 'qst_single', selectedOptionId: 'opt_a' },
-      { questionId: 'qst_text', value: 'Cinco años en riesgos' },
-    ]);
+    await screen.findByRole('button', { name: /enviar la evaluación/i });
+    // Se afirma sobre la barra de progreso y no sobre el texto: `aria-valuenow` es la
+    // fuente semántica, la misma que anuncia un lector de pantalla.
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0');
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuemax', '3');
+
+    // 4 · Responder.
+    await usuario.click(screen.getByRole('radio', { name: /categoría b/i }));
+    await usuario.type(
+      screen.getByRole('textbox', { name: /define riesgo crediticio/i }),
+      'La probabilidad de impago.',
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '2'),
+    );
+
+    // 5 · Revisión y envío.
+    await usuario.click(screen.getByRole('button', { name: /enviar la evaluación/i }));
+    const dialogo = await screen.findByRole('dialog');
+    expect(within(dialogo).getByText(/pregunta opcional omitida/i)).toBeInTheDocument();
+    await usuario.click(within(dialogo).getByRole('button', { name: /enviar ahora/i }));
+
+    // 6 · Comprobante.
+    await screen.findByRole('heading', { name: /evaluación enviada/i });
+    expect(screen.getByText('in_abc123')).toBeInTheDocument();
+    expect(screen.getByText(/revisa una persona del equipo evaluador/i)).toBeInTheDocument();
   });
 
-  it('never sends grading fields to the backend', async () => {
-    const user = userEvent.setup();
-    const repo = createFakeRepo();
-    renderFlow(<PublicAssessmentFlow initialCode="EVL-TEST-0001" repository={repo} />);
+  /**
+   * La forma exacta de las respuestas es el contrato con el calificador. Un `opciones`
+   * donde debería ir `valor` produce una respuesta incorrecta que nadie atribuiría al
+   * cliente.
+   */
+  it('envía las respuestas con la forma que el calificador espera y sin campos de nota', async () => {
+    const usuario = userEvent.setup();
+    render(<PublicAssessmentFlow codigoInicial="EV-RIES-4F2A" />);
+    await entrarALaPrueba(usuario);
 
-    await identify(user);
-    await startAttempt(user);
-    await user.click(screen.getByRole('radio', { name: /cuota sobre ingreso/i }));
-    await user.click(screen.getByRole('button', { name: /revisar y enviar/i }));
-    const dialog = await screen.findByRole('dialog');
-    await user.click(within(dialog).getByRole('button', { name: /enviar respuestas/i }));
-    await screen.findByRole('heading', { name: /recibidas correctamente/i });
+    await usuario.click(screen.getByRole('radio', { name: /categoría a/i }));
+    await usuario.type(
+      screen.getByRole('textbox', { name: /define riesgo crediticio/i }),
+      'Riesgo de impago',
+    );
+    await usuario.click(screen.getByRole('button', { name: /enviar la evaluación/i }));
+    await usuario.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: /enviar ahora/i }),
+    );
 
-    const serialised = JSON.stringify(repo.submissions[0]!.submission);
-    for (const forbidden of ['isCorrect', 'score', 'passed', 'pointsAwarded', 'maxPoints', 'auth']) {
-      expect(serialised).not.toContain(forbidden);
+    await waitFor(() => expect(enviarIntento).toHaveBeenCalledTimes(1));
+    const [, , respuestas, , automatico] = enviarIntento.mock.calls[0] as [
+      string,
+      string,
+      { preguntaId: string; opciones?: string[]; valor?: unknown }[],
+      unknown,
+      boolean,
+    ];
+
+    const unica = respuestas.find((r) => r.preguntaId === 'pr_unica');
+    const abierta = respuestas.find((r) => r.preguntaId === 'pr_texto');
+    expect(unica?.opciones).toEqual(['op_a']);
+    expect(unica).not.toHaveProperty('valor');
+    expect(abierta?.valor).toBe('Riesgo de impago');
+    expect(automatico).toBe(false);
+
+    const serializado = JSON.stringify(respuestas);
+    for (const prohibida of ['correcta', 'puntosObtenidos', 'nota', 'aprobado']) {
+      expect(serializado).not.toContain(prohibida);
     }
   });
 
-  it('never renders an answer key, and shows a safe notice for disabled types', async () => {
-    const user = userEvent.setup();
-    renderFlow(<PublicAssessmentFlow initialCode="EVL-TEST-0001" repository={createFakeRepo()} />);
+  /**
+   * La proyección pública del servidor no incluye la clave de respuestas, pero esta
+   * prueba mira lo que de verdad importa: que no aparezca en el DOM. Un `data-*` o un
+   * atributo de depuración descuidado la filtraría igual.
+   */
+  it('nunca pinta una clave de respuesta en la pantalla', async () => {
+    const usuario = userEvent.setup();
+    render(<PublicAssessmentFlow codigoInicial="EV-RIES-4F2A" />);
+    await entrarALaPrueba(usuario);
 
-    await identify(user);
-    await startAttempt(user);
-
-    const body = (document.body.textContent ?? '').toLowerCase();
-    for (const forbidden of [
-      'isCorrect',
-      'is_correct',
-      'answerKey',
-      'scoreValue',
-      'passingScore',
-      'pointsAwarded',
-      'puntaje',
-    ]) {
-      expect(body).not.toContain(forbidden.toLowerCase());
-    }
-    // Instead, the runner states plainly that answer keys are not shown.
-    expect(
-      screen.getByText(/no verás las respuestas correctas/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/requiere adjuntar un archivo y no está habilitado en esta versión/i),
-    ).toBeInTheDocument();
-  });
-
-  it('shows a generic message for an unavailable code, revealing nothing about its state', async () => {
-    const user = userEvent.setup();
-    renderFlow(
-      <PublicAssessmentFlow
-        repository={createFakeRepo({ lookupError: new EvaluationsError('NOT_FOUND') })}
-      />,
-    );
-
-    await user.type(screen.getByLabelText(/código de la evaluación/i), 'EVL-NO-EXISTE');
-    await identify(user);
-
-    expect(await screen.findByText('Esta evaluación no está disponible.')).toBeInTheDocument();
-    const body = (document.body.textContent ?? '').toLowerCase();
-    for (const leak of ['borrador', 'pausada', 'cerrada', 'archivada', 'draft']) {
-      expect(body).not.toContain(leak);
+    const html = document.body.innerHTML;
+    for (const prohibida of ['correcta', 'claveEmparejamiento', 'respuestaEsperada', 'modoPuntaje']) {
+      expect(html).not.toContain(prohibida);
     }
   });
+});
 
-  it('blocks the submission and lists the missing required questions', async () => {
-    const user = userEvent.setup();
-    const repo = createFakeRepo();
-    renderFlow(<PublicAssessmentFlow initialCode="EVL-TEST-0001" repository={repo} />);
+/* ========================================================================== */
 
-    await identify(user);
-    await startAttempt(user);
-    await user.click(screen.getByRole('button', { name: /revisar y enviar/i }));
-
-    const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByText(/faltan respuestas obligatorias/i)).toBeInTheDocument();
-    expect(within(dialog).getByText(/¿qué indicador mide la capacidad de pago\?/i)).toBeInTheDocument();
-    expect(within(dialog).queryByRole('button', { name: /enviar respuestas/i })).not.toBeInTheDocument();
-    expect(repo.submissions).toHaveLength(0);
-  });
-
-  it('cannot submit twice on a double click', async () => {
-    const user = userEvent.setup();
-    const repo = createFakeRepo();
-    renderFlow(<PublicAssessmentFlow initialCode="EVL-TEST-0001" repository={repo} />);
-
-    await identify(user);
-    await startAttempt(user);
-    await user.click(screen.getByRole('radio', { name: /cuota sobre ingreso/i }));
-    await user.click(screen.getByRole('button', { name: /revisar y enviar/i }));
-
-    const dialog = await screen.findByRole('dialog');
-    const confirm = within(dialog).getByRole('button', { name: /enviar respuestas/i });
-    await user.dblClick(confirm);
-    await screen.findByRole('heading', { name: /recibidas correctamente/i });
-
-    expect(repo.submissions).toHaveLength(1);
-  });
-
-  it('retries a failed submission with the SAME requestId, so no attempt is duplicated', async () => {
-    const user = userEvent.setup();
-    const repo = createFakeRepo({ failSubmitTimes: 1 });
-    renderFlow(<PublicAssessmentFlow initialCode="EVL-TEST-0001" repository={repo} />);
-
-    await identify(user);
-    await startAttempt(user);
-    await user.click(screen.getByRole('radio', { name: /cuota sobre ingreso/i }));
-    await user.type(screen.getByLabelText(/describe tu experiencia/i), 'Texto que no debe perderse');
-    await user.click(screen.getByRole('button', { name: /revisar y enviar/i }));
-
-    const dialog = await screen.findByRole('dialog');
-    await user.click(within(dialog).getByRole('button', { name: /enviar respuestas/i }));
-
-    // The failure is explained and the answers survive.
-    expect(await screen.findByText(/el servicio está ocupado/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/describe tu experiencia/i)).toHaveValue(
-      'Texto que no debe perderse',
+describe('envíos duplicados', () => {
+  it('un doble clic no envía dos veces', async () => {
+    const usuario = userEvent.setup();
+    let resolver: (valor: ComprobanteIntento) => void = () => {};
+    enviarIntento.mockImplementation(
+      () =>
+        new Promise<ComprobanteIntento>((resuelve) => {
+          resolver = resuelve;
+        }),
     );
 
-    const capturedRequestIds: string[] = [];
-    const originalSubmit = repo.submitAttempt;
-    repo.submitAttempt = async (requestId, submission) => {
-      capturedRequestIds.push(requestId);
-      return originalSubmit(requestId, submission);
-    };
+    render(<PublicAssessmentFlow codigoInicial="EV-RIES-4F2A" />);
+    await entrarALaPrueba(usuario);
+    await usuario.click(screen.getByRole('radio', { name: /categoría a/i }));
+    await usuario.click(screen.getByRole('button', { name: /enviar la evaluación/i }));
 
-    await user.click(screen.getByRole('button', { name: /reintentar el envío/i }));
-    await screen.findByRole('heading', { name: /recibidas correctamente/i });
+    const dialogo = await screen.findByRole('dialog');
+    const boton = within(dialogo).getByRole('button', { name: /enviar ahora/i });
+    await usuario.click(boton);
+    await usuario.click(boton).catch(() => undefined);
 
-    expect(repo.submissions).toHaveLength(1);
-    expect(capturedRequestIds).toHaveLength(1);
-    // Only one attempt was ever opened, and the retry reused its submission id.
-    expect(repo.startRequestIds).toHaveLength(1);
-    expect(repo.submissions[0]!.requestId).toBe(capturedRequestIds[0]);
+    expect(enviarIntento).toHaveBeenCalledTimes(1);
+    resolver(COMPROBANTE);
+    await screen.findByRole('heading', { name: /evaluación enviada/i });
   });
 
-  it('shows "under review" and never a zero when grading is pending', async () => {
-    const user = userEvent.setup();
-    renderFlow(
-      <PublicAssessmentFlow
-        initialCode="EVL-TEST-0001"
-        repository={createFakeRepo({ gradingStatus: 'pending_manual_review', score: null })}
-      />,
+  /**
+   * El caso más importante de todo el módulo. Si el reintento usara un identificador
+   * nuevo, el candidato acabaría con dos intentos en la hoja de cálculo y el reclutador
+   * no sabría cuál vale.
+   */
+  it('el reintento reutiliza el MISMO solicitudId, así que no duplica el intento', async () => {
+    const usuario = userEvent.setup();
+    enviarIntento
+      .mockRejectedValueOnce(
+        new ErrorEvaluaciones('TRANSPORTE', { diagnostico: 'sin red durante la prueba' }),
+      )
+      .mockResolvedValueOnce(COMPROBANTE);
+
+    render(<PublicAssessmentFlow codigoInicial="EV-RIES-4F2A" />);
+    await entrarALaPrueba(usuario);
+    await usuario.click(screen.getByRole('radio', { name: /categoría a/i }));
+    await usuario.click(screen.getByRole('button', { name: /enviar la evaluación/i }));
+    await usuario.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: /enviar ahora/i }),
     );
 
-    await identify(user);
-    await startAttempt(user);
-    await user.click(screen.getByRole('radio', { name: /cuota sobre ingreso/i }));
-    await user.click(screen.getByRole('button', { name: /revisar y enviar/i }));
-    const dialog = await screen.findByRole('dialog');
-    await user.click(within(dialog).getByRole('button', { name: /enviar respuestas/i }));
+    // Falla y ofrece reintentar.
+    const reintentar = await screen.findByRole('button', { name: /reintentar el envío/i });
+    await usuario.click(reintentar);
 
-    expect(await screen.findByText(/tus respuestas están en revisión/i)).toBeInTheDocument();
-    expect(screen.queryByText(/^0$/)).not.toBeInTheDocument();
+    await screen.findByRole('heading', { name: /evaluación enviada/i });
+    expect(enviarIntento).toHaveBeenCalledTimes(2);
+    const primero = (enviarIntento.mock.calls[0] as unknown[])[5];
+    const segundo = (enviarIntento.mock.calls[1] as unknown[])[5];
+    expect(segundo).toBe(primero);
   });
 
-  it('keeps answers when moving between questions and shows progress', async () => {
-    const user = userEvent.setup();
-    renderFlow(<PublicAssessmentFlow initialCode="EVL-TEST-0001" repository={createFakeRepo()} />);
+  it('muestra el comprobante original cuando el servidor ya lo tenía registrado', async () => {
+    const usuario = userEvent.setup();
+    enviarIntento.mockResolvedValue({ ...COMPROBANTE, repetido: true });
 
-    await identify(user);
-    await startAttempt(user);
+    render(<PublicAssessmentFlow codigoInicial="EV-RIES-4F2A" />);
+    await entrarALaPrueba(usuario);
+    await usuario.click(screen.getByRole('button', { name: /enviar la evaluación/i }));
+    await usuario.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: /enviar ahora/i }),
+    );
 
-    await user.type(screen.getByLabelText(/describe tu experiencia/i), 'Persistente');
-    await user.click(screen.getByRole('radio', { name: /cuota sobre ingreso/i }));
-
-    expect(screen.getByLabelText(/describe tu experiencia/i)).toHaveValue('Persistente');
-    expect(screen.getByText('2 / 2')).toBeInTheDocument();
+    await screen.findByRole('heading', { name: /evaluación enviada/i });
+    expect(screen.getByText(/ya estaba registrado/i)).toBeInTheDocument();
+    expect(screen.getByText(/no se creó ningún duplicado/i)).toBeInTheDocument();
   });
+});
 
-  it('freezes the form and submits once when the time runs out', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    const repo = createFakeRepo();
-    renderFlow(<PublicAssessmentFlow initialCode="EVL-TEST-0001" repository={repo} />);
+/* ========================================================================== */
 
-    await identify(user);
-    await startAttempt(user);
-    await user.click(screen.getByRole('radio', { name: /cuota sobre ingreso/i }));
+describe('obligatorias pendientes', () => {
+  it('las lista, permite saltar a cada una y aun así deja enviar', async () => {
+    const usuario = userEvent.setup();
+    render(<PublicAssessmentFlow codigoInicial="EV-RIES-4F2A" />);
+    await entrarALaPrueba(usuario);
 
-    // 10 minutes is the duration in the fixture.
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(10 * 60 * 1000 + 1500);
+    await usuario.click(screen.getByRole('button', { name: /enviar la evaluación/i }));
+    const dialogo = await screen.findByRole('dialog');
+    expect(within(dialogo).getByText(/2 preguntas obligatorias sin responder/i)).toBeInTheDocument();
+
+    // Cada pendiente es navegable: informar sin ayudar a encontrarla no sirve.
+    const atajo = within(dialogo).getByRole('button', { name: /mora de 45 días/i });
+    await usuario.click(atajo);
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    // Y se puede enviar incompleta: quien decide es quien rinde la prueba.
+    await usuario.click(screen.getByRole('button', { name: /enviar la evaluación/i }));
+    await usuario.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: /enviar ahora/i }),
+    );
+    await screen.findByRole('heading', { name: /evaluación enviada/i });
+  });
+});
+
+/* ========================================================================== */
+
+describe('intento retomado', () => {
+  /**
+   * Recargar no reinicia nada. El backend devuelve el mismo intento con su tiempo real
+   * y sus respuestas, y el runner las siembra en lugar de empezar en blanco.
+   */
+  it('siembra las respuestas del servidor y lo anuncia', async () => {
+    const usuario = userEvent.setup();
+    iniciarIntento.mockResolvedValue(
+      inicio({
+        retomado: true,
+        segundosRestantes: 600,
+        respuestasPrevias: [
+          { preguntaId: 'pr_unica', opciones: ['op_b'], valor: null },
+          { preguntaId: 'pr_texto', opciones: [], valor: 'respuesta anterior' },
+        ],
+      }),
+    );
+
+    render(<PublicAssessmentFlow codigoInicial="EV-RIES-4F2A" />);
+    await entrarALaPrueba(usuario);
+
+    expect(screen.getByText(/intento retomado/i)).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '2');
+    expect(screen.getByRole('radio', { name: /categoría b/i })).toBeChecked();
+    expect(screen.getByRole('textbox', { name: /define riesgo crediticio/i })).toHaveValue(
+      'respuesta anterior',
+    );
+    // El reloj muestra el tiempo REAL que queda, no la duración completa.
+    expect(screen.getByText('10:00')).toBeInTheDocument();
+  });
+});
+
+/* ========================================================================== */
+
+describe('evaluación no disponible', () => {
+  it('muestra el motivo del servidor y ofrece volver a comprobar si es transitorio', async () => {
+    const usuario = userEvent.setup();
+    abrirEvaluacion.mockResolvedValue({
+      ...PORTADA,
+      disponible: false,
+      motivo: 'pausada',
+      mensaje: 'La evaluación está pausada temporalmente. Vuelve a intentarlo más tarde.',
     });
 
-    await waitFor(() => expect(repo.submissions).toHaveLength(1));
-    expect(
-      await screen.findByRole('heading', { name: /recibidas correctamente/i }),
-    ).toBeInTheDocument();
-    // The answer the candidate had at the cut-off is the one that was sent.
-    expect(repo.submissions[0]!.submission.answers).toEqual([
-      { questionId: 'qst_single', selectedOptionId: 'opt_a' },
-    ]);
+    render(<PublicAssessmentFlow codigoInicial="EV-RIES-4F2A" />);
+    await identificarse(usuario);
+
+    await screen.findByText(/pausada temporalmente/i);
+    expect(screen.getByRole('button', { name: /volver a comprobar/i })).toBeInTheDocument();
+  });
+
+  it('no ofrece reintento cuando el plazo ya terminó', async () => {
+    const usuario = userEvent.setup();
+    abrirEvaluacion.mockResolvedValue({
+      ...PORTADA,
+      disponible: false,
+      motivo: 'ventana_cerrada',
+      mensaje: 'El plazo para realizar esta evaluación ya terminó.',
+    });
+
+    render(<PublicAssessmentFlow codigoInicial="EV-RIES-4F2A" />);
+    await identificarse(usuario);
+
+    await screen.findByText(/ya terminó/i);
+    expect(screen.queryByRole('button', { name: /volver a comprobar/i })).not.toBeInTheDocument();
+  });
+});
+
+/* ========================================================================== */
+
+describe('el reloj y el autoenvío', () => {
+  /**
+   * Al llegar a cero se envía **una sola vez** y con la marca de automático, para que
+   * el revisor sepa que la prueba se cerró sola en lugar de suponer que el candidato la
+   * entregó a medias.
+   */
+  it('envía solo al agotarse el tiempo, marcado como automático', async () => {
+    const usuario = userEvent.setup();
+    iniciarIntento.mockResolvedValue(inicio({ segundosRestantes: 2 }));
+
+    render(<PublicAssessmentFlow codigoInicial="EV-RIES-4F2A" />);
+    await entrarALaPrueba(usuario);
+
+    await waitFor(() => expect(enviarIntento).toHaveBeenCalledTimes(1), { timeout: 6000 });
+    const [, , , , automatico] = enviarIntento.mock.calls[0] as unknown[];
+    expect(automatico).toBe(true);
+    await screen.findByRole('heading', { name: /evaluación|cerrada/i });
+  });
+
+  it('no muestra reloj cuando la evaluación no tiene límite', async () => {
+    const usuario = userEvent.setup();
+    iniciarIntento.mockResolvedValue(
+      inicio({
+        segundosRestantes: null,
+        limiteEn: '',
+        prueba: { ...PRUEBA, aplicacion: { ...PRUEBA.aplicacion, duracionMinutos: null } },
+      }),
+    );
+
+    render(<PublicAssessmentFlow codigoInicial="EV-RIES-4F2A" />);
+    await entrarALaPrueba(usuario);
+
+    expect(screen.queryByTestId('ev-timer')).not.toBeInTheDocument();
+    expect(latido).not.toHaveBeenCalled();
+  });
+});
+
+/* ========================================================================== */
+
+describe('sin código en el enlace', () => {
+  it('pide el código de la evaluación en lugar de dejar un callejón sin salida', async () => {
+    const usuario = userEvent.setup();
+    render(<PublicAssessmentFlow />);
+
+    const campoCodigo = screen.getByLabelText(/código de la evaluación/i);
+    expect(campoCodigo).toBeInTheDocument();
+
+    await usuario.type(screen.getByLabelText(/número identificador/i), '1234567-12-2026');
+    await usuario.type(screen.getByLabelText(/nombre completo/i), 'Ana Quispe');
+    await usuario.type(campoCodigo, 'ev-ries-4f2a');
+    await usuario.click(screen.getByRole('checkbox'));
+    await usuario.click(screen.getByRole('button', { name: /continuar/i }));
+
+    // Se normaliza a mayúsculas: un código pegado en minúsculas no debe fallar.
+    await waitFor(() => expect(abrirEvaluacion).toHaveBeenCalledWith('EV-RIES-4F2A'));
   });
 });

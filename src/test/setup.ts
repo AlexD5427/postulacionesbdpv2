@@ -48,3 +48,16 @@ if (typeof window !== 'undefined' && !('IntersectionObserver' in window)) {
   // @ts-expect-error assigning test double
   window.IntersectionObserver = MockIntersectionObserver;
 }
+
+// jsdom does not implement scrollIntoView, which the public assessment runner uses
+// to jump to a pending question. Without a stub, that navigation throws inside a
+// requestAnimationFrame callback and surfaces as an unhandled error.
+if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = vi.fn();
+}
+
+// jsdom implements window.scrollTo as a no-op that logs "Not implemented"; the
+// runner scrolls to the top when changing page.
+if (typeof window !== 'undefined') {
+  window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
+}

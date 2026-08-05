@@ -15,20 +15,26 @@ seguridad/privacidad**.
 - **Redacción de logs**: enmascara claves sensibles; IP gruesa.
 - **Query de convocatorias mock**: filtros/orden/paginación y ausencia de campos prohibidos.
 - **Estado de accesibilidad**: *clamp* del tamaño de texto, atributos en `<html>`.
-- **Módulo público de evaluaciones** (beta): transporte (`redirect: follow`, `text/plain`,
-  reintento solo en lecturas, `requestId` reutilizado), borrado de claves de respuesta, clasificación
-  del endpoint, formato de respuesta por tipo de pregunta y guardias estáticas de seguridad (sin
-  `fetch` en componentes, sin acciones administrativas, CSP). Ver
-  [`PUBLIC_ASSESSMENTS_BETA.md`](PUBLIC_ASSESSMENTS_BETA.md) §9.
+- **Módulo público de evaluaciones**: número identificador (formato, normalización y los cinco
+  motivos de rechazo), forma del valor por tipo de pregunta, `0` y `false` como respuestas válidas,
+  saneamiento del texto enriquecido (incluidos los enlaces `javascript:`), paridad de los 39 tipos
+  con el catálogo del ATS, transporte (`redirect: follow`, `text/plain`, `credentials: omit`,
+  reintento **solo** en lecturas, `solicitudId` reutilizado), las tres formas de repetición
+  idempotente, borrado de claves de respuesta a cualquier profundidad, clasificación del endpoint y
+  guardias estáticas de seguridad. Ver [`PUBLIC_ASSESSMENTS.md`](PUBLIC_ASSESSMENTS.md).
 
 ## Componentes (Testing Library)
 
 - `JobCard`: muestra info neutral y **nunca** afinidad/match/score (guardia de regla de producto).
 - `AssessmentConsentScreen`: divulga el monitoreo y **bloquea el inicio** hasta marcar ambas casillas.
-- `AccessForm` (evaluaciones públicas): la casilla de privacidad es una puerta real y el documento no
-  se reescribe silenciosamente.
+- `AccessScreen` (evaluaciones públicas): la casilla de datos personales es una puerta real, el
+  número identificador no se reescribe silenciosamente y el eco de sus tres partes aparece al
+  escribir.
+- `AnswerControl`: un caso por forma de respuesta (catorce), comprobando el **valor emitido** y no
+  sólo que el control se pinte — un `opciones` donde el servidor espera `valor` produciría una
+  respuesta incorrecta que nada señalaría como culpa del cliente.
 - `PublicAssessmentFlow`: recorrido completo sin sesión, doble clic, reintento con el mismo
-  `requestId`, revisión manual sin mostrar un cero y cierre por tiempo.
+  `solicitudId`, intento retomado, autoenvío al expirar y comprobante sin inventar una nota.
 
 ## End-to-end (Playwright) — `e2e/`
 
@@ -36,11 +42,12 @@ Cubren los flujos requeridos (navegar convocatorias, abrir detalle, registro en 
 envío de postulación, consentimiento y ejecución de evaluación, teclado, *reduced motion*, tema
 claro/oscuro, y **verificación de que no aparece estado interno ni score**).
 
-`e2e/public-assessments.spec.ts` cubre el módulo público (beta) de punta a punta: acceso desde la
-portada sin sesión, enlace con código, respuesta de todas las familias de control, código
-inexistente, obligatorias faltantes, doble clic, reintento sin duplicar el intento, temporizador y
-operación solo con teclado. `e2e/screenshots.public-assessments.spec.ts` genera las capturas de la
-revisión visual (ejecución manual).
+`e2e/public-assessments.spec.ts` cubre el módulo público de punta a punta contra el backend de
+demostración: acceso con el número identificador, eco de sus partes, antesala con la declaración de
+integridad, todos los tipos de control **sin errores de consola**, ordenar sólo con teclado, salto a
+una pregunta con el foco, revisión previa, envío, reintento sin duplicar, límite de intentos,
+reanudación tras recargar, evaluación pausada y ausencia de la clave de respuestas en el DOM. La misma
+suite escribe las capturas de la revisión visual en `test-results/capturas`.
 
 ```bash
 npm run test:e2e:install   # descarga Chromium (requiere acceso a cdn.playwright.dev)

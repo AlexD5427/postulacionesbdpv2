@@ -41,10 +41,10 @@ const publicEnvSchema = z.object({
   /**
    * Absolute URL of the **Evaluations** Apps Script Web App (`…/exec`).
    *
-   * Public by design: it carries no secret and only serves the four sanitised
-   * public actions. It is NOT the same deployment as
+   * Public by design: it carries no secret and only serves the five sanitised
+   * candidate actions. It is NOT the same deployment as
    * `NEXT_PUBLIC_APPS_SCRIPT_PUBLIC_READ_URL` (jobs) and it must never point at
-   * an administrative route. See docs/PUBLIC_ASSESSMENTS_BETA.md.
+   * an administrative route. See docs/PUBLIC_ASSESSMENTS.md.
    */
   NEXT_PUBLIC_EVALUATIONS_APPS_SCRIPT_URL: z.string().url().or(z.literal('')).default(''),
 });

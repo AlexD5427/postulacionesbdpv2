@@ -47,7 +47,7 @@ function contentSecurityPolicy() {
      * CSP is enforced on the redirect target too, so BOTH origins are required.
      * Omitting the second one produces a blocked request that looks exactly like
      * a network outage. Only these two Google origins are allowed — no wildcard
-     * over `*.google.com`. See docs/PUBLIC_ASSESSMENTS_BETA.md §CSP.
+     * over `*.google.com`. See docs/PUBLIC_ASSESSMENTS.md §10.
      */
     'connect-src': [
       "'self'",
