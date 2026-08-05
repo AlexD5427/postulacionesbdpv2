@@ -103,17 +103,24 @@ desarrollo.
 Ajusta `NEXT_PUBLIC_DATA_MODE`. El *factory* en `src/infrastructure/providers/factory.ts` selecciona
 el proveedor y **degrada a mock** si faltan credenciales, de modo que la app siempre es ejecutable.
 
-### Evaluaciones públicas (beta)
+### Evaluaciones públicas (módulo temporal, sin inicio de sesión)
 
-`/evaluaciones` permite a un candidato **sin cuenta** rendir una evaluación publicada en el ATS. Para
-conectarlo con el backend real basta una variable:
+`/evaluaciones` permite a un candidato **sin cuenta** rendir la evaluación que le asignó el equipo de
+Talento Humano. Se identifica con su **número identificador**
+(`CarnetDeIdentidad-N.ºdeProceso-Año`, p. ej. `1234567-12-2026`) y el código de la evaluación viaja en
+el enlace de la invitación (`/evaluaciones?codigo=EV-XXXX-1234`).
+
+El módulo habla el contrato del backend de Evaluaciones **2.0.0** del ATS: reloj del servidor,
+autoguardado, reanudación del intento en curso, calificación en el servidor y rastro de integridad
+declarado antes de empezar. Para conectarlo con el backend real basta una variable:
 
 ```bash
 NEXT_PUBLIC_EVALUATIONS_APPS_SCRIPT_URL=https://script.google.com/macros/s/<ID>/exec
 ```
 
-Sin ella, y en modo `mock`, el módulo usa datos de demostración y lo advierte en pantalla. Detalles,
-límites y pasos manuales en [`docs/PUBLIC_ASSESSMENTS_BETA.md`](docs/PUBLIC_ASSESSMENTS_BETA.md).
+Sin ella, y en modo `mock`, el módulo usa un backend de demostración local que habla el mismo
+contrato y lo advierte de forma permanente en pantalla. Contrato, decisiones, límites reconocidos y
+**cómo retirar el módulo** en [`docs/PUBLIC_ASSESSMENTS.md`](docs/PUBLIC_ASSESSMENTS.md).
 
 ---
 
@@ -132,7 +139,8 @@ límites y pasos manuales en [`docs/PUBLIC_ASSESSMENTS_BETA.md`](docs/PUBLIC_ASS
 | [MEDIA_CONTENT_MODEL](docs/MEDIA_CONTENT_MODEL.md) | Bloques de contenido y modelo de media. |
 | [ASSESSMENT_ENGINE](docs/ASSESSMENT_ENGINE.md) | Motor de evaluaciones *schema-driven*. |
 | [ASSESSMENT_TELEMETRY_AND_PRIVACY](docs/ASSESSMENT_TELEMETRY_AND_PRIVACY.md) | Telemetría de integridad y privacidad. |
-| [PUBLIC_ASSESSMENTS_BETA](docs/PUBLIC_ASSESSMENTS_BETA.md) | Módulo temporal público de evaluaciones (sin login). |
+| [PUBLIC_ASSESSMENTS](docs/PUBLIC_ASSESSMENTS.md) | Módulo temporal público de evaluaciones (sin login): contrato, diseño y retirada. |
+| [DOCUMENTO_EXPLICATIVO_EVALUACIONES_PUBLICAS](docs/DOCUMENTO_EXPLICATIVO_EVALUACIONES_PUBLICAS.md) | Por qué se reconstruyó el módulo público y qué se aprendió al probarlo en un navegador. |
 | [BACKEND_INTEGRATION_PLAN](docs/BACKEND_INTEGRATION_PLAN.md) | Cómo conectar Supabase, Apps Script y R2. |
 | [FUTURE_HRIS_EVOLUTION](docs/FUTURE_HRIS_EVOLUTION.md) | Evolución hacia el HRIS/HCM sin monolito. |
 | [TESTING](docs/TESTING.md) | Estrategia de pruebas y verificación de accesibilidad. |

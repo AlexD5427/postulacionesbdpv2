@@ -1,0 +1,661 @@
+/**
+ * Lenguaje visual del módulo público de evaluaciones.
+ *
+ * ── Por qué este archivo existe y no vive en globals.css ─────────────────────
+ * Todo el módulo tiene que poder retirarse en un solo commit, y una hoja de
+ * estilos repartida por `globals.css` deja restos: reglas huérfanas que nadie se
+ * atreve a borrar porque no está claro quién las usa. Aquí el estilo del módulo
+ * vive junto al módulo, se importa desde su única ruta y desaparece con él.
+ *
+ * ── El material ──────────────────────────────────────────────────────────────
+ * Se construye SOBRE el Liquid Glass del portal (`.glass`, `.glass-elevated`,
+ * `--glass-*`, `--shadow-glass-*`), no en paralelo. Lo que se añade son cuatro
+ * cosas que una prueba necesita y una página de contenido no:
+ *
+ *  1. `--ev-accent`: el acento que el autor eligió en el ATS (`tema.acento`), como
+ *     variable, para que el runner completo se tiña sin condicionales en cada
+ *     componente;
+ *  2. una **aurora** de fondo propia, más presente que el `ambient-bg` del portal,
+ *     porque una evaluación es una sesión de trabajo y el fondo tiene que sostener
+ *     la atención durante media hora sin cansar;
+ *  3. **bisel y realce** de las tarjetas de pregunta: un canto de luz que responde
+ *     al estado (sin responder · respondida · pendiente obligatoria);
+ *  4. controles de respuesta con estados táctiles grandes y transiciones cortas.
+ *
+ * ── Accesibilidad ────────────────────────────────────────────────────────────
+ * Cada efecto se apaga con `[data-motion='reduced']` y con
+ * `[data-transparency='reduced']`, igual que el resto del portal. Ningún estado se
+ * comunica **solo** con color: lo respondido lleva marca, lo pendiente lleva
+ * icono, y el reloj crítico lleva texto además de tono.
+ */
+
+/* ========================================================================== */
+/* Acentos                                                                    */
+/* ========================================================================== */
+
+/**
+ * Los seis acentos que el ATS admite (`EV_ACENTOS`).
+ *
+ * Se declaran como tripletas RGB para poder usarlas con `rgb(var(--ev-accent) / α)`
+ * igual que los tokens del portal, y así heredar la misma forma de componer
+ * transparencias.
+ */
+/**
+ * Dos variables por acento, y la segunda no es un capricho.
+ *
+ * `--ev-accent` es el color vivo: rellenos, aros, cantos de luz, bordes. Son objetos
+ * gráficos, y para ellos la WCAG pide 3:1.
+ *
+ * `--ev-accent-ink` es el mismo acento **oscurecido lo suficiente para llevar texto**.
+ * Hace falta porque el acento vivo no llega a 4,5:1 contra un fondo claro: un cian
+ * 500 sobre blanco ronda 2,7:1. La primera versión usaba el vivo para los títulos de
+ * sección, los números de pregunta y el texto blanco sobre el segmentado, y la
+ * auditoría con axe encontró treinta y un incumplimientos de contraste. No se veían
+ * mal —se veían bonitos—, y eso es justamente lo que hace que este tipo de defecto
+ * llegue a producción.
+ *
+ * En tema claro es el tono 700 de cada familia; en oscuro, el 300, porque ahí el texto
+ * tiene que aclararse para separarse del fondo.
+ */
+.ev-root {
+  --ev-accent: var(--color-primary);
+  --ev-accent-soft: var(--color-accent);
+  --ev-accent-ink: var(--color-primary);
+}
+.ev-root[data-acento='cian'] {
+  --ev-accent: 6 182 212;
+  --ev-accent-soft: 34 211 238;
+  --ev-accent-ink: 14 116 144;
+}
+.ev-root[data-acento='azul'] {
+  --ev-accent: 37 99 235;
+  --ev-accent-soft: 96 165 250;
+  --ev-accent-ink: 29 78 216;
+}
+.ev-root[data-acento='indigo'] {
+  --ev-accent: 79 70 229;
+  --ev-accent-soft: 129 140 248;
+  --ev-accent-ink: 67 56 202;
+}
+.ev-root[data-acento='esmeralda'] {
+  --ev-accent: 5 150 105;
+  --ev-accent-soft: 52 211 153;
+  --ev-accent-ink: 4 108 78;
+}
+.ev-root[data-acento='violeta'] {
+  --ev-accent: 124 58 237;
+  --ev-accent-soft: 167 139 250;
+  --ev-accent-ink: 109 40 217;
+}
+.ev-root[data-acento='ambar'] {
+  --ev-accent: 217 119 6;
+  --ev-accent-soft: 251 191 36;
+  --ev-accent-ink: 146 64 14;
+}
+
+/* En tema oscuro el texto se aclara: el 700 sobre un fondo oscuro no se lee. */
+[data-theme='dark'] .ev-root[data-acento='cian'] {
+  --ev-accent-ink: 103 232 249;
+}
+[data-theme='dark'] .ev-root[data-acento='azul'] {
+  --ev-accent-ink: 147 197 253;
+}
+[data-theme='dark'] .ev-root[data-acento='indigo'] {
+  --ev-accent-ink: 165 180 252;
+}
+[data-theme='dark'] .ev-root[data-acento='esmeralda'] {
+  --ev-accent-ink: 110 231 183;
+}
+[data-theme='dark'] .ev-root[data-acento='violeta'] {
+  --ev-accent-ink: 196 181 253;
+}
+[data-theme='dark'] .ev-root[data-acento='ambar'] {
+  --ev-accent-ink: 252 211 77;
+}
+
+/**
+ * Texto secundario, un pelo más oscuro que el del portal.
+ *
+ * `--color-muted-foreground` en tema claro es `slate-600`, que sobre el fondo de página
+ * da **4,49:1**. La norma pide 4,5:1 en texto pequeño, así que el token se queda a una
+ * centésima — y este módulo lo usa mucho a 12 px: etiquetas de escala, ayudas,
+ * contadores de caracteres. Dentro del módulo se baja a `slate-700`, que da holgura sin
+ * cambiar nada del resto del portal.
+ *
+ * En tema oscuro el token ya tiene margen sobrado, así que se deja como está.
+ */
+.ev-root {
+  --color-muted-foreground: var(--p-slate-700);
+}
+[data-theme='dark'] .ev-root {
+  --color-muted-foreground: var(--p-slate-300);
+}
+
+/* Densidad compacta: el autor puede pedir una prueba más apretada. */
+.ev-root[data-densidad='compacta'] {
+  --ev-gap: 0.75rem;
+  --ev-card-pad: 1rem;
+}
+.ev-root {
+  --ev-gap: 1.25rem;
+  --ev-card-pad: 1.5rem;
+}
+
+/* ========================================================================== */
+/* Aurora de fondo                                                            */
+/* ========================================================================== */
+
+.ev-aurora {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.ev-aurora::before,
+.ev-aurora::after {
+  content: '';
+  position: absolute;
+  width: 52rem;
+  height: 52rem;
+  border-radius: 9999px;
+  filter: blur(110px);
+  opacity: 0.42;
+  will-change: transform;
+}
+.ev-aurora::before {
+  top: -18rem;
+  left: -12rem;
+  background: radial-gradient(circle, rgb(var(--ev-accent) / 0.55), transparent 62%);
+}
+.ev-aurora::after {
+  bottom: -20rem;
+  right: -14rem;
+  background: radial-gradient(circle, rgb(var(--ev-accent-soft) / 0.42), transparent 62%);
+}
+:not([data-motion='reduced']) .ev-aurora::before {
+  animation: ev-drift-a 30s ease-in-out infinite;
+}
+:not([data-motion='reduced']) .ev-aurora::after {
+  animation: ev-drift-b 36s ease-in-out infinite;
+}
+[data-transparency='reduced'] .ev-aurora,
+[data-contrast='high'] .ev-aurora {
+  display: none;
+}
+@keyframes ev-drift-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(7rem, 5rem, 0) scale(1.14);
+  }
+}
+@keyframes ev-drift-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-6rem, -4rem, 0) scale(1.1);
+  }
+}
+
+/* ========================================================================== */
+/* Tarjeta de pregunta                                                        */
+/* ========================================================================== */
+
+/**
+ * El canto de luz.
+ *
+ * Una barra vertical de 3 px en el borde izquierdo que cambia según el estado de
+ * la pregunta. Es el único adorno que aporta información: permite recorrer una
+ * página larga y ver de un vistazo qué falta, sin leer.
+ */
+.ev-card {
+  position: relative;
+  border-radius: var(--radius-3xl);
+  padding: var(--ev-card-pad);
+  transition:
+    box-shadow var(--duration-md) var(--ease-out),
+    border-color var(--duration-md) var(--ease-out),
+    transform var(--duration-md) var(--ease-spring-soft);
+}
+.ev-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 1.25rem;
+  bottom: 1.25rem;
+  width: 3px;
+  border-radius: 9999px;
+  background: rgb(var(--color-border));
+  transition:
+    background-color var(--duration-md) var(--ease-out),
+    box-shadow var(--duration-md) var(--ease-out);
+}
+.ev-card[data-estado='respondida']::before {
+  background: rgb(var(--ev-accent));
+  box-shadow: 0 0 14px rgb(var(--ev-accent) / 0.55);
+}
+.ev-card[data-estado='pendiente']::before {
+  background: rgb(var(--color-warning));
+  box-shadow: 0 0 14px rgb(var(--color-warning) / 0.5);
+}
+.ev-card:focus-within {
+  border-color: rgb(var(--ev-accent) / 0.45);
+  box-shadow: var(--shadow-glass-lg);
+}
+[data-motion='reduced'] .ev-card {
+  transition: none;
+}
+
+/* ========================================================================== */
+/* Controles de respuesta                                                     */
+/* ========================================================================== */
+
+/**
+ * Opción seleccionable (radio, casilla, imagen).
+ *
+ * El objetivo de toque es la fila completa, no el círculo: en un móvil, apuntar a
+ * un radio de 16 px con el pulgar es la diferencia entre responder y equivocarse.
+ */
+.ev-option {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius-2xl);
+  border: 1px solid rgb(var(--color-border));
+  background-color: rgb(var(--glass-tint) / var(--glass-alpha-input));
+  text-align: left;
+  overflow: hidden;
+  transition:
+    border-color var(--duration-sm) var(--ease-out),
+    background-color var(--duration-sm) var(--ease-out),
+    box-shadow var(--duration-sm) var(--ease-out);
+}
+.ev-option:not([data-inerte='true']):hover {
+  border-color: rgb(var(--ev-accent) / 0.45);
+  background-color: rgb(var(--ev-accent) / 0.06);
+}
+.ev-option[data-marcada='true'] {
+  border-color: rgb(var(--ev-accent) / 0.7);
+  background-color: rgb(var(--ev-accent) / 0.12);
+  box-shadow:
+    inset 0 1px 0 rgb(var(--glass-highlight) / 0.35),
+    0 0 0 1px rgb(var(--ev-accent) / 0.35);
+}
+.ev-option[data-inerte='true'] {
+  opacity: var(--opacity-disabled);
+  cursor: not-allowed;
+}
+/* El anillo de foco vive en la etiqueta, porque el input real está oculto. */
+.ev-option:has(:focus-visible) {
+  outline: 2px solid rgb(var(--color-ring));
+  outline-offset: 2px;
+}
+/* Barrido de luz al pasar por encima: el mismo gesto que `.glass-interactive`. */
+.ev-option::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(110deg, transparent, rgb(var(--glass-highlight) / 0.3), transparent);
+  transform: skewX(-18deg);
+  transition: left var(--duration-xl) var(--ease-out);
+  pointer-events: none;
+}
+:not([data-motion='reduced']) .ev-option:not([data-inerte='true']):hover::after {
+  left: 130%;
+}
+[data-transparency='reduced'] .ev-option::after,
+[data-motion='reduced'] .ev-option::after {
+  display: none;
+}
+
+/**
+ * El control nativo, invisible y **cubriendo toda su etiqueta**.
+ *
+ * ── Por qué así y no `sr-only` ───────────────────────────────────────────────
+ * El patrón habitual esconde el `<input>` con la técnica de «sólo para lectores de
+ * pantalla»: un cuadrado de 1 px recortado en la esquina superior izquierda de la
+ * etiqueta. Funciona, y tiene dos inconvenientes que se descubrieron probando en un
+ * navegador de verdad:
+ *
+ *  · el objetivo real del puntero pasa a ser la etiqueta, y el clic llega al input por
+ *    propagación. Basta que algo se interponga —una barra fija, un elemento decorativo—
+ *    para que el clic no llegue;
+ *  · para cualquier herramienta que apunte al control por su rol (una prueba
+ *    automatizada, un software de acceso por conmutador o por voz), el objetivo es un
+ *    punto de 1 px en una posición arbitraria.
+ *
+ * Cubriendo la etiqueta, el objetivo del puntero **es** el control: la fila entera es
+ * clicable de forma nativa, sin depender de la propagación. El aspecto lo sigue
+ * poniendo la etiqueta con `data-marcada`, y el teclado, el grupo y el anuncio del
+ * estado los sigue poniendo el navegador.
+ */
+.ev-native-input {
+  position: absolute;
+  inset: 0;
+  /*
+   * Por encima de cualquier contenido de la etiqueta.
+   *
+   * El control segmentado pinta su realce y su texto en capas propias para que el
+   * realce pueda deslizarse por detrás. Si el input queda debajo, el objetivo del
+   * puntero vuelve a ser un `<span>` y el clic depende otra vez de la propagación de la
+   * etiqueta. Al ser completamente transparente, ponerlo arriba no tapa nada.
+   */
+  z-index: 30;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: inherit;
+}
+.ev-native-input:disabled {
+  cursor: not-allowed;
+}
+
+/** Indicador (círculo o cuadrado) de una opción. */
+.ev-indicator {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.125rem;
+  border: 1.5px solid rgb(var(--color-border));
+  background-color: rgb(var(--color-background));
+  transition:
+    border-color var(--duration-sm) var(--ease-out),
+    background-color var(--duration-sm) var(--ease-out);
+}
+.ev-indicator[data-forma='circulo'] {
+  border-radius: 9999px;
+}
+.ev-indicator[data-forma='cuadro'] {
+  border-radius: 0.375rem;
+}
+.ev-option[data-marcada='true'] .ev-indicator {
+  /* Lleva un punto o una marca blanca dentro: el relleno tiene que ser el tono con
+     tinta para que ese glifo llegue a 3:1. */
+  border-color: rgb(var(--ev-accent-ink));
+  background-color: rgb(var(--ev-accent-ink));
+}
+
+/* ========================================================================== */
+/* Barra de mando y reloj                                                     */
+/* ========================================================================== */
+
+/**
+ * Barra de mando: pegada, pero **debajo** de la barra pública del portal.
+ *
+ * `PublicNavbar` es `sticky top-0` y comparte capa (`--z-nav`) con esto. Al ir después
+ * en el documento, la barra de mando ganaba y pintaba encima de la navegación del
+ * portal: el candidato veía media barra del banco asomando por detrás. Colocarla a la
+ * altura de la navegación resuelve el solape sin tocar el resto del portal ni pelear
+ * por el `z-index`.
+ */
+.ev-commandbar {
+  position: sticky;
+  top: calc(env(safe-area-inset-top) + 5.25rem);
+  z-index: var(--z-nav);
+  border-radius: var(--radius-3xl);
+}
+
+/**
+ * Barra inferior: por **encima** del dock del portal.
+ *
+ * El dock es `fixed` en `bottom: max(0.9rem, safe-area)` con unos 3,6 rem de alto, y
+ * comparte capa con esta barra. Con la barra a `bottom: 0.75rem` el dock quedaba
+ * justo encima del botón «Enviar la evaluación» en un móvil: el candidato pulsaba el
+ * dock y se iba de la evaluación, o simplemente no podía enviar. Se descubrió
+ * probando en un Pixel 7 y es la clase de defecto que jamás aparece en un escritorio.
+ *
+ * La alternativa —subirle el `z-index` y tapar el dock— esconde la navegación del
+ * portal sin decirlo. Sentarse encima deja las dos cosas usables.
+ */
+.ev-bottombar {
+  position: sticky;
+  bottom: calc(max(0.9rem, env(safe-area-inset-bottom)) + 4.25rem);
+  z-index: var(--z-nav);
+  border-radius: var(--radius-3xl);
+}
+
+/** Aro del temporizador: el trazo se anima con `stroke-dashoffset`. */
+.ev-timer-track {
+  stroke: rgb(var(--color-border));
+}
+.ev-timer-arc {
+  stroke: rgb(var(--ev-accent));
+  transition: stroke-dashoffset 1s linear, stroke var(--duration-md) var(--ease-out);
+}
+.ev-timer[data-nivel='atencion'] .ev-timer-arc {
+  stroke: rgb(var(--color-warning));
+}
+.ev-timer[data-nivel='critico'] .ev-timer-arc {
+  stroke: rgb(var(--color-danger));
+}
+:not([data-motion='reduced']) .ev-timer[data-nivel='critico'] {
+  animation: ev-pulse 1.8s ease-in-out infinite;
+}
+@keyframes ev-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.045);
+  }
+}
+
+/* ========================================================================== */
+/* Navegador de preguntas                                                     */
+/* ========================================================================== */
+
+.ev-pill {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(var(--color-border));
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  transition:
+    transform var(--duration-sm) var(--ease-spring-soft),
+    border-color var(--duration-sm) var(--ease-out),
+    background-color var(--duration-sm) var(--ease-out);
+}
+.ev-pill:hover {
+  transform: translateY(-2px);
+}
+.ev-pill[data-estado='respondida'] {
+  border-color: rgb(var(--ev-accent) / 0.6);
+  background-color: rgb(var(--ev-accent) / 0.16);
+  color: rgb(var(--color-foreground));
+}
+.ev-pill[data-estado='pendiente'] {
+  border-color: rgb(var(--color-warning) / 0.7);
+  background-color: rgb(var(--color-warning) / 0.12);
+}
+.ev-pill[data-actual='true'] {
+  border-color: rgb(var(--ev-accent));
+  box-shadow: 0 0 0 3px rgb(var(--ev-accent) / 0.22);
+}
+[data-motion='reduced'] .ev-pill:hover {
+  transform: none;
+}
+
+/* ========================================================================== */
+/* Deslizador                                                                 */
+/* ========================================================================== */
+
+.ev-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 1.75rem;
+  background: transparent;
+  cursor: pointer;
+}
+.ev-slider::-webkit-slider-runnable-track {
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    rgb(var(--ev-accent)) var(--ev-fill, 0%),
+    rgb(var(--color-muted)) var(--ev-fill, 0%)
+  );
+}
+.ev-slider::-moz-range-track {
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: rgb(var(--color-muted));
+}
+.ev-slider::-moz-range-progress {
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: rgb(var(--ev-accent));
+}
+.ev-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-top: -0.5rem;
+  border-radius: 9999px;
+  border: 2px solid rgb(var(--color-background));
+  background: rgb(var(--ev-accent-ink));
+  box-shadow: var(--shadow-glass-md);
+  transition: transform var(--duration-sm) var(--ease-spring-soft);
+}
+.ev-slider::-moz-range-thumb {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  border: 2px solid rgb(var(--color-background));
+  background: rgb(var(--ev-accent-ink));
+  box-shadow: var(--shadow-glass-md);
+}
+.ev-slider:active::-webkit-slider-thumb {
+  transform: scale(1.12);
+}
+.ev-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgb(var(--ev-accent) / 0.28);
+}
+
+/* ========================================================================== */
+/* Huecos en línea                                                            */
+/* ========================================================================== */
+
+/**
+ * Un hueco se dibuja DENTRO de la frase, no como un campo aparte debajo.
+ *
+ * Leer «La razón ____ mide la liquidez» con el campo en su sitio es entender la
+ * pregunta; leerla con una lista de «Hueco 1 / Hueco 2» al pie obliga a reconstruir
+ * mentalmente la correspondencia, que es trabajo cognitivo que no evalúa nada.
+ */
+.ev-blank {
+  display: inline-block;
+  min-width: 7rem;
+  max-width: 100%;
+  padding: 0.125rem 0.5rem;
+  margin-inline: 0.15rem;
+  border: 0;
+  border-bottom: 2px solid rgb(var(--ev-accent) / 0.5);
+  border-radius: 0.375rem 0.375rem 0 0;
+  background-color: rgb(var(--ev-accent) / 0.08);
+  color: rgb(var(--color-foreground));
+  font: inherit;
+  text-align: center;
+  transition:
+    border-color var(--duration-sm) var(--ease-out),
+    background-color var(--duration-sm) var(--ease-out);
+}
+.ev-blank:focus {
+  outline: none;
+  border-bottom-color: rgb(var(--ev-accent));
+  background-color: rgb(var(--ev-accent) / 0.16);
+}
+
+/* ========================================================================== */
+/* Sello del comprobante                                                      */
+/* ========================================================================== */
+
+.ev-seal-check {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+}
+:not([data-motion='reduced']) .ev-seal-check {
+  animation: ev-draw 0.6s var(--ease-out) 0.25s forwards;
+}
+[data-motion='reduced'] .ev-seal-check {
+  stroke-dashoffset: 0;
+}
+@keyframes ev-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ========================================================================== */
+/* Utilidades del módulo                                                      */
+/* ========================================================================== */
+
+/** Oculta la barra de desplazamiento del navegador de preguntas sin perderlo. */
+.ev-scroll-x {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+.ev-scroll-x::-webkit-scrollbar {
+  height: 6px;
+}
+.ev-scroll-x::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: rgb(var(--color-border));
+}
+
+/** Texto tabular para relojes y contadores: evita el salto de ancho por dígito. */
+.ev-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/**
+ * Ancla de desplazamiento.
+ *
+ * Cuando se salta a una pregunta desde el navegador, la barra de mando fija taparía
+ * el enunciado. `scroll-margin-top` reserva su altura para que la pregunta quede
+ * visible entera.
+ */
+.ev-anchor {
+  scroll-margin-top: 11rem;
+}
+
+/**
+ * También en la propia opción.
+ *
+ * Al navegar con teclado, el navegador desplaza el control enfocado hasta que sea
+ * visible, y sin este margen lo deja justo debajo de la barra de mando: técnicamente
+ * visible, en la práctica tapado. Es la misma razón por la que Playwright no podía
+ * pulsar una opción hasta que la barra se hizo compacta.
+ */
+.ev-option input,
+.ev-option {
+  scroll-margin-top: 11rem;
+  scroll-margin-bottom: 9rem;
+}
